@@ -1,0 +1,19 @@
+:root { font-family: system-ui, sans-serif; }
+body { margin: 0; background: #0b0c10; color: #e6edf3; }
+.container { max-width: 960px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 28px; margin-bottom: 16px; }
+
+form { display: flex; gap: 12px; margin-bottom: 16px; }
+.file-label, button {
+  padding: 10px 14px; border-radius: 12px; border: 1px solid #30363d;
+  background: #161b22; color: inherit; cursor: pointer;
+}
+.file-label input { display: none; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.preview { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.preview img { width: 100%; background: #111; border: 1px solid #30363d; border-radius: 12px; }
+#download { display: inline-block; margin-top: 8px; text-decoration: none; border: 1px solid #30363d; padding: 8px 12px; border-radius: 10px; }
+.hidden { display: none; }
+
+#status { margin-top: 8px; opacity: 0.85; }
