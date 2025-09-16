@@ -18,3 +18,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# media
+!backend/media/
+!backend/media/*.png
+!backend/media/*.jpg
+!backend/media/*.jpeg

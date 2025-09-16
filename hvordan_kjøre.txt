@@ -9,6 +9,8 @@ source .venv/bin/activate
 3.
 pip install -r backend/requirements.txt
 
+(denne tar litt tid så vent sånn 1 min)
+
 4.
 python -m pip install --upgrade pip
 
@@ -16,9 +18,22 @@ python -m pip install --upgrade pip
 pip install --upgrade rembg onnxruntime
 
 6.
+git add -f backend/media/*.png
+
+7.
+python -m backend.seed_from_media
+
+8.
 python -m uvicorn backend.app:app --reload --reload-exclude .venv
 
 
+
+(her burde du også vente sånn 20 sek, eller til du ser det står "reloading..." i terminalen)
+
+----------
 så skriver du inn dette inn i google/safari: 
 
 http://localhost:8000
+
+kommer til å bruke tid til å laste siden i begynnelsen!
+samme når du åpner databsen eller tester bakgrunnsfjerneren for første gang
