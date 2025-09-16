@@ -1,7 +1,7 @@
 # backend/routers/clothes.py
 import os
 import uuid
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Response
 from sqlalchemy.orm import Session
 from PIL import Image
 from io import BytesIO
@@ -36,9 +36,7 @@ async def create_cloth(
     content = await file.read()
     img = Image.open(BytesIO(content)).convert("RGBA")
 
-    # Her kan du koble på deres /remove-bg logikk om ønskelig.
-    # For nå lagrer vi originalen (eller du kan gjøre enkel hvit-bakgrunn->transparent).
-    # Eksempel på enkel behandling: sørg for PNG
+    # Sørg for PNG og unikt filnavn
     filename = f"{uuid.uuid4().hex}.png"
     path = os.path.join(MEDIA_DIR, filename)
     img.save(path, format="PNG")
@@ -50,3 +48,23 @@ async def create_cloth(
     db.commit()
     db.refresh(cloth)
     return cloth
+
+@router.delete("/{cloth_id}", status_code=204)
+def delete_cloth(cloth_id: int, db: Session = Depends(get_db)):
+    cloth = db.query(Cloth).get(cloth_id)
+    if not cloth:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # Forsøk å slette bildefilen fra disk
+    try:
+        if cloth.image_url and cloth.image_url.startswith("/media/"):
+            filename = os.path.basename(cloth.image_url)
+            path = os.path.join(MEDIA_DIR, filename)
+            if os.path.exists(path):
+                os.remove(path)
+    except Exception:
+        pass  # ignorer hvis filen ikke finnes
+
+    db.delete(cloth)
+    db.commit()
+    return Response(status_code=204)

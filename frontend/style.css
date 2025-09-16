@@ -20,3 +20,7 @@ nav button {
 #clothes-grid .item {
   text-align: center;
 }
+
+#clothes-grid .item { text-align: center; padding: 8px; }
+
+#clothes-grid .item button { margin-top: 6px; }

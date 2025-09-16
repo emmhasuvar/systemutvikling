@@ -7,7 +7,7 @@ document.getElementById("upload-btn").addEventListener("click", showUpload);
 document.getElementById("view-btn").addEventListener("click", showClothes);
 
 function showHome() {
-  content.innerHTML = `<p>Velg en handling over!</p>`;
+  content.innerHTML = `<p>Velkommen! Velg en handling over.</p>`;
 }
 
 function showUpload() {
@@ -28,7 +28,7 @@ function showUpload() {
     const file = fd.get("file");
     if (!file) return;
 
-    // 1. Send bildet til /remove-bg
+    // 1) Send bildet til /remove-bg
     const formData = new FormData();
     formData.append("file", file);
 
@@ -41,7 +41,7 @@ function showUpload() {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
 
-    // 2. Vis forhåndsvisning + Lagre-knapp
+    // 2) Vis forhåndsvisning + Lagre-knapp
     const preview = document.getElementById("preview");
     preview.innerHTML = `
       <h3>Resultat</h3>
@@ -50,15 +50,21 @@ function showUpload() {
       <button id="save-btn">Lagre i database</button>
     `;
 
-    // 3. Når brukeren klikker "Lagre", send PNG-en til /clothes/
+    // 3) Når brukeren klikker "Lagre", send PNG-en til /clothes/
     document.getElementById("save-btn").addEventListener("click", async () => {
       const clothForm = new FormData();
       clothForm.append("name", fd.get("name"));
       clothForm.append("file", blob, "result.png");
 
       const saveRes = await fetch(`${API}/clothes/`, { method: "POST", body: clothForm });
+      if (!saveRes.ok) {
+        alert("Kunne ikke lagre.");
+        console.error(await saveRes.text());
+        return;
+      }
       const data = await saveRes.json();
       alert("Lagret! ID: " + data.id);
+      showClothes(); // gå rett til oversikten
     });
   });
 }
@@ -68,6 +74,11 @@ async function showClothes() {
   const grid = document.getElementById("clothes-grid");
 
   const res = await fetch(`${API}/clothes/`);
+  if (!res.ok) {
+    grid.innerHTML = "<p>Klarte ikke å hente klær.</p>";
+    console.error(await res.text());
+    return;
+  }
   const clothes = await res.json();
 
   if (clothes.length === 0) {
@@ -76,13 +87,31 @@ async function showClothes() {
   }
 
   grid.innerHTML = clothes
-    .map(c => `
+    .map(
+      (c) => `
       <div class="item">
         <img src="${API}${c.image_url}" width="150" />
         <p>${c.name}</p>
+        <button class="del" data-id="${c.id}">Slett</button>
       </div>
-    `)
+    `
+    )
     .join("");
+
+  // Event delegation for sletting
+  grid.addEventListener("click", async (e) => {
+    if (!e.target.matches(".del")) return;
+    const id = e.target.getAttribute("data-id");
+    if (!confirm("Slette dette plagget?")) return;
+
+    const resp = await fetch(`${API}/clothes/${id}`, { method: "DELETE" });
+    if (resp.status === 204) {
+      showClothes(); // refresh
+    } else {
+      alert("Kunne ikke slette (se konsoll).");
+      console.error(await resp.text());
+    }
+  }, { once: true }); // sørg for én lytter per rendering
 }
 
 // Start på "Hjem"
