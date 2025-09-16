@@ -1,0 +1,22 @@
+# Virtual environments
+.venv/
+venv/
+
+# Python cache/compiled
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Env-filer
+.env
+
+# Databaser
+*.db
+
+# Mac/Windows søppelfiler
+.DS_Store
+Thumbs.db
+
+# Media (lagrede filer fra appen)
+backend/media/
