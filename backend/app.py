@@ -1,107 +1,76 @@
-# backend/app.py
-import os
-from io import BytesIO
-
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
-from fastapi.staticfiles import StaticFiles
-from PIL import Image
+from io import BytesIO
+from PIL import Image, ImageFilter
+import numpy as np
 
-from .database import Base, engine
-from .routers import clothes as clothes_router
-from .routers import looks as looks_router
+app = FastAPI(title="Egen bakgrunnsfjerner")
 
-# -----------------------------------------------------
-# DB-tabeller (i prod bruk Alembic, men dette er fint nå)
-# -----------------------------------------------------
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="Looksy API")
-
-# -----------------------------------------------------
-# CORS (åpent for enkel testing; stram inn i prod)
-# -----------------------------------------------------
+# CORS: gjør at frontend (file:// eller annen origin) får lov å kalle API-et
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # stram inn til din origin i produksjon
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -----------------------------------------------------
-# Statisk: /media (lagrede bilder)
-# -----------------------------------------------------
-BASE_DIR = os.path.dirname(__file__)
-MEDIA_DIR = os.path.join(BASE_DIR, "media")
-os.makedirs(MEDIA_DIR, exist_ok=True)
-app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
+MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 
-# -----------------------------------------------------
-# (Valgfritt) serve frontend/index.html på /
-# -----------------------------------------------------
-FRONTEND_DIR = os.path.join(os.path.dirname(BASE_DIR), "frontend")
-INDEX_HTML = os.path.join(FRONTEND_DIR, "index.html")
+def estimate_bg_color(img: Image.Image, border: int = 10) -> np.ndarray:
+    arr = np.array(img.convert("RGB"))
+    h, w, _ = arr.shape
+    edges = np.concatenate([
+        arr[:border, :, :].reshape(-1,3),
+        arr[-border:, :, :].reshape(-1,3),
+        arr[:, :border, :].reshape(-1,3),
+        arr[:, -border:, :].reshape(-1,3),
+    ], axis=0)
+    return edges.mean(axis=0)
 
-@app.get("/", include_in_schema=False)
-def root():
-    if not os.path.exists(INDEX_HTML):
-        # Ikke krise om du ikke bruker dette – bare åpne HTML-filen direkte
-        return {"msg": "frontend/index.html finnes ikke. API kjører."}
-    return FileResponse(INDEX_HTML)
+def remove_background_smart(pil_img: Image.Image, thr: int = 40, blur: int = 2) -> Image.Image:
+    img_rgba = pil_img.convert("RGBA")
+    arr = np.array(img_rgba)
+    rgb = arr[..., :3].astype(np.float32)
+    bg = estimate_bg_color(img_rgba)
+    dist = np.sqrt(((rgb - bg) ** 2).sum(axis=2))
+    bg_mask = dist < float(thr)
+    alpha = arr[..., 3].copy()
+    alpha[bg_mask] = 0
+    if blur > 0:
+        mask_img = Image.fromarray(alpha, mode="L").filter(ImageFilter.GaussianBlur(blur))
+        alpha = np.array(mask_img)
+    out = arr.copy()
+    out[..., 3] = alpha
+    return Image.fromarray(out, mode="RGBA")
 
-# -----------------------------------------------------
-# BAKGRUNNSFJERNER
-# 1) Prøver å bruke rembg (hvis installert)
-# 2) Hvis ikke, faller tilbake til 'bare RGBA' (ikke ekte fjerning)
-#    -> Bytt ut med din tidligere funksjon om du har en egen implementasjon
-# -----------------------------------------------------
-def remove_bg_pil(pil_image: Image.Image) -> Image.Image:
+@app.get("/", response_class=HTMLResponse)
+def index():
+    return """
+    <html><body>
+      <h3>Last opp et bilde for å fjerne bakgrunn</h3>
+      <form action="/remove-bg?thr=60&blur=2" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" required />
+        <button type="submit">Kjør</button>
+      </form>
+      <p>API-dokumentasjon: <a href="/docs">/docs</a></p>
+    </body></html>
     """
-    Returnerer en RGBA-PNG med (forhåpentlig) fjernet bakgrunn.
-    Hvis 'rembg' er installert brukes den. Ellers en enkel fallback.
-    """
+
+@app.post("/remove-bg")
+async def remove_bg(file: UploadFile = File(...), thr: int = 40, blur: int = 2):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Last opp en bildefil.")
+    data = await file.read()
+    if len(data) > MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Filen er for stor.")
     try:
-        # Hvis du tidligere hadde en custom funksjon, lim den inn her
-        # og returner resultatet som PIL.Image i RGBA.
-        from rembg import remove  # type: ignore
-        # rembg forventer bytes; vi går via bytes -> bytes -> PIL
-        buf_in = BytesIO()
-        pil_image.save(buf_in, format="PNG")
-        out_bytes = remove(buf_in.getvalue())
-        out_img = Image.open(BytesIO(out_bytes)).convert("RGBA")
-        return out_img
-    except Exception:
-        # Fallback: ingen ekte segmentering – bare konverter til RGBA
-        # (Bra nok til å teste flyten; bytt til din faktiske kode)
-        return pil_image.convert("RGBA")
-
-@app.post("/remove-bg", response_class=Response, tags=["utils"])
-async def remove_bg_endpoint(file: UploadFile = File(...)):
-    """
-    Tar inn et bilde og returnerer image/png der bakgrunnen er fjernet.
-    Frontend kan deretter vise resultatet og poste PNG-en videre til /clothes/
-    for å lagre i databasen.
-    """
-    try:
-        content = await file.read()
-        img = Image.open(BytesIO(content))
-    except Exception:
-        raise HTTPException(status_code=400, detail="Ugyldig bilde")
-
-    out = remove_bg_pil(img)
-    buf = BytesIO()
-    out.save(buf, format="PNG")
-    buf.seek(0)
-    return Response(content=buf.read(), media_type="image/png")
-
-# -----------------------------------------------------
-# API-ruter for Clothes og Looks (som du allerede har)
-# -----------------------------------------------------
-app.include_router(clothes_router.router)
-app.include_router(looks_router.router)
-
-@app.get("/healthz", tags=["utils"])
-def healthz():
-    return {"ok": True}
+        img = Image.open(BytesIO(data))
+        result = remove_background_smart(img, thr=thr, blur=blur)
+        buf = BytesIO()
+        result.save(buf, format="PNG")
+        buf.seek(0)
+        return StreamingResponse(buf, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Feil under behandling: {e}")

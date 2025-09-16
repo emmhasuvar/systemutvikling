@@ -1,8 +1,6 @@
 fastapi
 uvicorn[standard]
-sqlalchemy
-pydantic
-python-multipart
 pillow
-alembic
-# For Postgres i prod: psycopg2-binary
+python-multipart
+
+tester igjen 
