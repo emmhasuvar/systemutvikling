@@ -18,5 +18,3 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Media (lagrede filer fra appen)
-backend/media/
