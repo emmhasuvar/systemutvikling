@@ -6,5 +6,4 @@ pydantic
 python-multipart
 pillow
 alembic
-# For Postgres i prod: psycopg2-binary
-
+rembg  # hvis du bruker bakgrunnsfjerner via rembg

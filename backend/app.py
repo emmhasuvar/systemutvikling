@@ -43,6 +43,13 @@ app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 # -----------------------------------------------------
 FRONTEND_DIR = os.path.join(os.path.dirname(BASE_DIR), "frontend")
 INDEX_HTML = os.path.join(FRONTEND_DIR, "index.html")
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
+@app.get("/", include_in_schema=False)
+def root():
+    if not os.path.exists(INDEX_HTML):
+        return {"msg": "frontend/index.html finnes ikke. API kjører."}
+    return FileResponse(INDEX_HTML)
 
 @app.get("/", include_in_schema=False)
 def root():
