@@ -7,7 +7,7 @@ document.getElementById("upload-btn").addEventListener("click", showUpload);
 document.getElementById("view-btn").addEventListener("click", showClothes);
 
 function showHome() {
-  content.innerHTML = `<p>Velkommen! Velg en handling over.</p>`;
+  content.innerHTML = `<p>Velg en handling over!</p>`;
 }
 
 function showUpload() {
