@@ -1,2 +1,0 @@
-# systemutvikling
-gruppeoppgave

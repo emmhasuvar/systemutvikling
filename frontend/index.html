@@ -1,94 +1,38 @@
-<!doctype html>
-<html lang="no">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Bakgrunnsfjerner</title>
-  <link rel="stylesheet" href="./styles.css" />
-</head>
-<body>
-  <main class="container">
-    <h1>Fjern bakgrunn (lokal versjon)</h1>
+<!-- Last opp et klesplagg -->
+<form id="upload-form">
+  <input type="text" name="name" placeholder="Navn på plagg" required />
+  <input type="file" name="file" accept="image/*" required />
+  <button>Last opp</button>
+</form>
 
-    <form id="form">
-      <label class="file-label">
-        <input id="file-input" type="file" accept="image/*" required />
-        Velg bilde
-      </label>
-      <button id="submit-btn" type="submit">Kjør</button>
-    </form>
+<script>
+const API = "http://127.0.0.1:8000";
 
-    <section class="preview">
-      <div>
-        <h2>Original</h2>
-        <img id="orig" alt="Original" />
-      </div>
-      <div>
-        <h2>Resultat (PNG m/ gjennomsiktighet)</h2>
-        <img id="result" alt="Resultat" />
-        <a id="download" download="result.png" class="hidden">Last ned</a>
-      </div>
-    </section>
+// Opprett cloth
+document.getElementById("upload-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const res = await fetch(`${API}/clothes/`, { method: "POST", body: fd });
+  const data = await res.json();
+  console.log("Ny cloth:", data);
+});
 
-    <p id="status"></p>
-  </main>
+// Liste alle klær
+async function loadClothes() {
+  const res = await fetch(`${API}/clothes/`);
+  const clothes = await res.json();
+  // Render som rutenett (bruk image_url)
+  // f.eks: <img src={`${API}${cloth.image_url}`} />
+}
 
-  <script>
-    const API_BASE = "http://127.0.0.1:8000";
-    await fetch(`${API_BASE}/remove-bg`, { method: "POST", body: formData });
-
-
-    const form = document.getElementById("form");
-    const fileInput = document.getElementById("file-input");
-    const orig = document.getElementById("orig");
-    const result = document.getElementById("result");
-    const download = document.getElementById("download");
-    const statusEl = document.getElementById("status");
-    const submitBtn = document.getElementById("submit-btn");
-
-    fileInput.addEventListener("change", () => {
-      const [file] = fileInput.files || [];
-      if (file) {
-        orig.src = URL.createObjectURL(file);
-      }
-    });
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const [file] = fileInput.files || [];
-      if (!file) return;
-
-      statusEl.textContent = "Prosesserer…";
-      submitBtn.disabled = true;
-      result.src = "";
-      download.classList.add("hidden");
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const res = await fetch(`${API_BASE}/remove-bg`, {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || `Feil: ${res.status}`);
-        }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        result.src = url;
-        download.href = url;
-        download.classList.remove("hidden");
-        statusEl.textContent = "Ferdig!";
-      } catch (err) {
-        statusEl.textContent = err.message;
-      } finally {
-        submitBtn.disabled = false;
-      }
-    });
-  </script>
-</body>
-</html>
-
-<!-- Testing om dette fungerer
+// Opprett look
+async function createLook(title, clothIds) {
+  const res = await fetch(`${API}/looks/`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ title, cloth_ids: clothIds })
+  });
+  const look = await res.json();
+  console.log("Ny look:", look);
+}
+</script>
