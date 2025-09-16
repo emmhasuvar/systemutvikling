@@ -1,0 +1,24 @@
+Skriv inn disse linjene, en etter en i terminalen:
+
+1.
+python -m venv .venv
+
+2.
+source .venv/bin/activate
+
+3.
+pip install -r backend/requirements.txt
+
+4.
+python -m pip install --upgrade pip
+
+5.
+pip install --upgrade rembg onnxruntime
+
+6.
+python -m uvicorn backend.app:app --reload --reload-exclude .venv
+
+
+så skriver du inn dette inn i google/safari: 
+
+http://localhost:8000
