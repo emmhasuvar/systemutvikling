@@ -17,6 +17,7 @@ def main():
 
         for p in files:
             image_url = f"/media/{p.name}"
+
             exists = db.query(Cloth).filter(Cloth.image_url == image_url).first()
             if exists:
                 continue

@@ -1,7 +1,7 @@
 Skriv inn disse linjene, en etter en i terminalen:
 
 1.
-python -m venv .venv
+python3 -m venv .venv
 
 2.
 source .venv/bin/activate
@@ -12,7 +12,7 @@ pip install -r backend/requirements.txt
 (denne tar litt tid så vent sånn 1 min)
 
 4.
-python -m pip install --upgrade pip
+python3 -m pip install --upgrade pip
 
 5.
 pip install --upgrade rembg onnxruntime
@@ -24,11 +24,12 @@ git add -f backend/media/*.png
 python -m backend.seed_from_media
 
 8.
-python -m uvicorn backend.app:app --reload --reload-exclude .venv
+python3 -m uvicorn backend.app:app --reload --reload-exclude .venv
 
+9.
+så trykk cntrl+cntr
 
-
-(her burde du også vente sånn 20 sek, eller til du ser det står "reloading..." i terminalen)
+10. python -m uvicorn backend.app:app --reload --reload-exclude .venv
 
 ----------
 så skriver du inn dette inn i google/safari: 
@@ -37,3 +38,6 @@ http://localhost:8000
 
 kommer til å bruke tid til å laste siden i begynnelsen!
 samme når du åpner databsen eller tester bakgrunnsfjerneren for første gang
+
+når du skal gå ut av localhost trykk cntrl+C 
+men da må du skrive inn dette på nytt for å kjøre nettsiden: python -m uvicorn backend.app:app --reload --reload-exclude .venv

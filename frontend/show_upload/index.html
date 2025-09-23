@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Looksy – Last opp</title>
+  <link rel="stylesheet" href="/static/show_upload/style.css">
+  <script src="/static/show_upload/script.js" defer></script>
+</head>
+<body>
+  <nav>
+    <a href="/">Hjem</a>
+    <a href="/upload">Last opp</a>
+    <a href="/clothes">Se klær</a>
+  </nav>
+
+  <h1>Last opp plagg</h1>
+
+  <form id="upload-form">
+    <input id="name" type="text" name="name" placeholder="Navn på plagg" required />
+    <input id="file" type="file" name="file" accept="image/*" required />
+    <button id="process-btn" type="button">Kjør bakgrunnsfjerner</button>
+  </form>
+
+  <section id="result" class="hidden">
+    <h2>Resultat</h2>
+    <img id="preview" alt="Forhåndsvisning" />
+    <div class="actions">
+      <button id="save-btn" type="button">Lagre i database</button>
+    </div>
+    <p id="status" class="muted"></p>
+  </section>
+</body>
+</html>
