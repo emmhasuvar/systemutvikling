@@ -1,11 +1,147 @@
-<!doctype html><html lang="no"><head>
+<!doctype html>
+<html lang="no">
+  <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Looksy – Hjem</title>
+
     <link rel="stylesheet" href="/static/show_home/style.css">
-  </head><body>
-    <nav><a href="/">Hjem</a> <a href="/upload">Last opp</a> <a href="/clothes">Se klær</a></nav>
-    <main id="content"></main>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <!-- Top bar -->
+    <header class="topbar" role="banner">
+      <div class="container topbar__inner">
+        <a class="brand" href="/">Looksy</a>
+        <button class="menu-toggle" aria-label="Åpne/lukk meny" aria-expanded="false" data-js="menu-toggle">☰</button>
+        <nav class="nav" aria-label="Hovedmeny" data-js="nav">
+          <a class="nav__link" href="/">Hjem</a>
+          <a class="nav__link" href="/upload">Last opp</a>
+          <a class="nav__link" href="/clothes">Se klær</a>
+          <a class="button button--primary" href="/login">Logg inn</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="content" class="main" role="main">
+      <!-- Slider -->
+      <section class="slider" aria-label="Kampanjer">
+        <div class="slider__viewport" data-js="slider"></div>
+        <button class="slider__control slider__control--prev" aria-label="Forrige" data-js="prev">‹</button>
+        <button class="slider__control slider__control--next" aria-label="Neste" data-js="next">›</button>
+        <div class="slider__dots" role="tablist" aria-label="Velg banner" data-js="dots"></div>
+      </section>
+
+      <!-- Quick buttons -->
+      <section class="hero" aria-label="Hurtigvalg">
+        <div class="hero__buttons">
+          <a class="btn" href="side1.html">Button 1</a>
+          <a class="btn" href="side2.html">Button 2</a>
+          <a class="btn" href="side3.html">Button 3</a>
+          <a class="btn" href="side4.html">Button 4</a>
+        </div>
+      </section>
+    </main>
+
+    <!-- Your other app script (make sure it doesn't overwrite #content) -->
     <script src="/static/show_home/script.js" defer></script>
-  </body></html>
+
+    <!-- Mobile nav -->
+    <script>
+      (function () {
+        const toggle = document.querySelector('[data-js="menu-toggle"]');
+        const nav = document.querySelector('[data-js="nav"]');
+        if (!toggle || !nav) return;
+        toggle.addEventListener('click', () => {
+          const open = nav.classList.toggle('nav--open');
+          toggle.setAttribute('aria-expanded', String(open));
+        });
+      })();
+    </script>
+
+    <!-- Slider script: placed AFTER the slider markup -->
+    <script>
+      (function () {
+        const viewport = document.querySelector('.slider__viewport');
+        const dotsWrap = document.querySelector('[data-js="dots"]');
+        const prev = document.querySelector('[data-js="prev"]');
+        const next = document.querySelector('[data-js="next"]');
+        if (!viewport || !dotsWrap) return;
+
+        const items = [
+          { image: '/static/show_home/DSC00608.jpg', alt: 'Holiday Shop', title: 'The Holiday Shop',
+            text: 'Gjør deg klar for solen med nye sesongfavoritter.', ctaHref: '/clothes?cat=women', ctaText: 'Shop kvinner' },
+          { image: '/static/show_home/DSC00608.jpg', alt: 'Ukens Nyheter', title: 'Ukens Nyheter',
+            text: 'Friske plagg lander hver uke. Sikre deg størrelsen din!', ctaHref: '/clothes?sort=new', ctaText: 'Se nyheter' },
+          { image: '/static/show_home/DSC00608.jpg', alt: 'Salg', title: 'Mid-Season Sale',
+            text: 'Gjør kupp på utvalgte favoritter – begrenset tid.', ctaHref: '/clothes?sale=1', ctaText: 'Til salget' }
+        ];
+
+        const slideHTML = (s, idx) => `
+          <article class="slide${idx===0?' is-active':''}" data-index="${idx}" id="slide-${idx}">
+            <img class="slide__img" src="${s.image}" alt="${s.alt || ''}">
+            <div class="slide__content">
+              ${s.title ? `<h2 class="slide__title">${s.title}</h2>` : ''}
+              ${s.text ? `<p class="slide__text">${s.text}</p>` : ''}
+              ${s.ctaHref ? `<a class="button button--primary" href="${s.ctaHref}">${s.ctaText || 'Shop nå'}</a>` : ''}
+            </div>
+          </article>`;
+
+        const dotHTML = (i, active) =>
+          `<button class="dot${active?' is-active':''}" role="tab" aria-selected="${active}" aria-controls="slide-${i}" data-js="dot" data-index="${i}">
+             <span class="sr-only">Banner ${i+1}</span>
+           </button>`;
+
+        viewport.innerHTML = items.map(slideHTML).join('');
+        dotsWrap.innerHTML = items.map((_,i)=>dotHTML(i, i===0)).join('');
+
+        const slides = Array.from(viewport.querySelectorAll('.slide'));
+        const dots = Array.from(document.querySelectorAll('[data-js="dot"]'));
+        let i = 0, timer = null;
+        const DURATION = 6000;
+
+        function go(to){
+          const from = i;
+          i = (to + slides.length) % slides.length;
+          if (from === i) return;
+          slides[from].classList.remove('is-active');
+          slides[i].classList.add('is-active');
+          dots[from]?.classList.remove('is-active');
+          dots[i]?.classList.add('is-active');
+          dots.forEach((d, idx) => d.setAttribute('aria-selected', String(idx === i)));
+          restart();
+        }
+        const nextSlide = () => go(i + 1);
+        const prevSlide = () => go(i - 1);
+        const restart   = () => { clearInterval(timer); timer = setInterval(nextSlide, DURATION); };
+
+        prev?.addEventListener('click', prevSlide);
+        next?.addEventListener('click', nextSlide);
+        dots.forEach(btn => btn.addEventListener('click', () => go(Number(btn.dataset.index))));
+
+        viewport.setAttribute('tabindex', '0');
+        viewport.addEventListener('keydown', (e)=>{ if (e.key==='ArrowLeft') prevSlide(); if (e.key==='ArrowRight') nextSlide(); });
+
+        const slider = document.querySelector('.slider');
+        slider?.addEventListener('mouseenter', ()=> clearInterval(timer));
+        slider?.addEventListener('mouseleave', restart);
+        slider?.addEventListener('focusin', ()=> clearInterval(timer));
+        slider?.addEventListener('focusout', restart);
+
+        let startX = 0, dx = 0; const THRESH = 40;
+        viewport.addEventListener('touchstart', (e)=>{ startX = e.touches[0].clientX; dx = 0; }, {passive:true});
+        viewport.addEventListener('touchmove',  (e)=>{ dx = e.touches[0].clientX - startX; }, {passive:true});
+        viewport.addEventListener('touchend',   ()=>{ if (dx > THRESH) prevSlide(); else if (dx < -THRESH) nextSlide(); });
+
+        document.querySelectorAll('.slide__img').forEach(img=>{
+          img.addEventListener('error', ()=> console.error('Image failed:', img.src));
+          img.addEventListener('load',  ()=> console.log('Image loaded:', img.src));
+        });
+
+        restart();
+      })();
+    </script>
+  </body>
+</html>
+
   

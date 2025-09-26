@@ -21,15 +21,15 @@ pip install --upgrade rembg onnxruntime
 git add -f backend/media/*.png
 
 7.
-python -m backend.seed_from_media
+python3 -m backend.seed_from_media
 
 8.
 python3 -m uvicorn backend.app:app --reload --reload-exclude .venv
 
 9.
-så trykk cntrl+cntr
+så trykk cntrl+c
 
-10. python -m uvicorn backend.app:app --reload --reload-exclude .venv
+10. python3 -m uvicorn backend.app:app --reload --reload-exclude .venv
 
 ----------
 så skriver du inn dette inn i google/safari: 
