@@ -40,4 +40,4 @@ kommer til å bruke tid til å laste siden i begynnelsen!
 samme når du åpner databsen eller tester bakgrunnsfjerneren for første gang
 
 når du skal gå ut av localhost trykk cntrl+C 
-men da må du skrive inn dette på nytt for å kjøre nettsiden: python -m uvicorn backend.app:app --reload --reload-exclude .venv
+men da må du skrive inn dette på nytt for å kjøre nettsiden: python3 -m uvicorn backend.app:app --reload --reload-exclude .venv
