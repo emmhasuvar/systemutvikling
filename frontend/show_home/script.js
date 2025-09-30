@@ -6,11 +6,11 @@ if (!document.querySelector('.slider')) {
 }
 
 const fallback = [
-  { image: `${STATIC}/show_home/DSC00608.jpg`, alt: 'ROSE Shop', title: 'The Holiday Shop',
+  { image: `${STATIC}/show_home/bilde1.jpg`, alt: 'ROSE Shop', title: 'The Holiday Shop',
     text: 'Gjør deg klar for solen med nye sesongfavoritter.', ctaHref: '/clothes?cat=women', ctaText: 'Shop kvinner' },
-  { image: `${STATIC}/show_home/DSC00608.jpg`, alt: 'Ukens Nyheter', title: 'Ukens Nyheter',
+  { image: `${STATIC}/show_home/bilde2.jpg`, alt: 'Ukens Nyheter', title: 'Ukens Nyheter',
     text: 'Friske plagg lander hver uke. Sikre deg størrelsen din!', ctaHref: '/clothes?sort=new', ctaText: 'Se nyheter' },
-  { image: `${STATIC}/show_home/DSC00608.jpg`, alt: 'Salg', title: 'Mid-Season Sale',
+  { image: `${STATIC}/show_home/bilde3.jpg`, alt: 'Salg', title: 'Mid-Season Sale',
     text: 'Gjør kupp på utvalgte favoritter – begrenset tid.', ctaHref: '/clothes?sale=1', ctaText: 'Til salget' }
 ];
 s
