@@ -6,8 +6,8 @@
   --surface: #f8fafc;      /* slate-50 */
   --brand: #111827;        /* near-black header band like screenshot */
   --brand-accent: #1f2937; /* darker hover */
-  --cta: #2563eb;          /* blue button */
-  --cta-600:#1d4ed8;
+  --cta: #c33797;          /* blue button */
+  --cta-600:#8a152e;
   --radius: 12px;
   --container: 1120px;
   --shadow: 0 10px 30px rgba(2,6,23,.08);
@@ -48,7 +48,14 @@ a{ color:inherit; }
   color:#fff;
   font-size:.875rem;
 }
+.brand img {
+  height: 50px;   /* try 40–48px for a 64px header */
+  width: auto;    /* keep aspect ratio */
+  display: block;
+}
+
 .utilitybar .container{ display:flex; justify-content:space-between; align-items:center; padding:.4rem 0; }
+
 
 /* Nav */
 .menu-toggle{ display:none; background:transparent; border:0; font-size:1.25rem; cursor:pointer; }
@@ -80,8 +87,27 @@ a{ color:inherit; }
 }
 
 /* Each slide: crossfade via opacity */
-.slide{ position:absolute; inset:0; opacity:0; transition:opacity .4s ease; display:grid; }
-.slide.is-active{ opacity:1; position:absolute; }
+/* Each slide: only active is visible & clickable; others can't intercept clicks */
+.slide{
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;      /* hide non-active slides */
+  pointer-events: none;    /* prevent clicks on hidden slides */
+  transition: opacity .4s ease;
+  display: grid;
+  z-index: 0;
+}
+.slide.is-active{
+  opacity: 1;
+  visibility: visible;     /* show active slide */
+  pointer-events: auto;    /* clickable */
+  z-index: 1;
+}
+
+/* keep controls/dots above slides */
+.slider__control,
+.slider__dots { z-index: 2; }
 
 .slide__img{
   width:100%; height:100%;
