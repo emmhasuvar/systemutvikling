@@ -5,27 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Looksy – Hjem</title>
     <link rel="icon" type="image/png" href="/static/show_home/favicon.png">
+
     <link rel="stylesheet" href="/static/show_home/style.css">
 
   </head>
   <body>
     <!-- Top bar -->
-    <header class="topbar" role="banner">
+   <header class="topbar" role="banner">
   <div class="container topbar__inner">
     <a class="brand" href="/" aria-label="Looksy – Hjem">
       <img src="/static/show_home/logo.jpg" alt="Looksy" width="50" height="50" />
       <span class="sr-only">Looksy</span>
     </a>
 
-    <button class="menu-toggle" aria-label="Åpne/lukk meny" aria-expanded="false" data-js="menu-toggle">☰</button>
+    <button class="menu-toggle" aria-label="Åpne/lukk meny" aria-expanded="false" data-js="menu-toggle">
+      ☰
+    </button>
+
     <nav class="nav" aria-label="Hovedmeny" data-js="nav">
-      <a class="nav__link" href="/">Hjem</a>
+      <a class="nav__link is-active" href="/">Hjem</a>
       <a class="nav__link" href="/upload">Last opp</a>
-      <a class="nav__link" href="/clothes">Se klær</a>
-      <a class="button button--primary" href="/login">Logg inn</a>
+      <a class="nav__link" href="/show_clothes">Se klær</a>
+      <a class="button button--primary" href="/show_about">Om oss</a>
     </nav>
   </div>
 </header>
+
 
     <main id="content" class="main" role="main">
       <!-- Slider -->

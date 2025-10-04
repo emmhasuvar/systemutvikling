@@ -3,23 +3,34 @@
   <head>
     <meta charset="utf-8" />
     <title>Looksy – Klær</title>
+
+    <!-- Felles stil først, så side-spesifikk -->
+    <link rel="stylesheet" href="/static/show_home/style.css" />
     <link rel="stylesheet" href="/static/show_clothes/style.css" />
+
     <script src="/static/show_clothes/script.js" defer></script>
     <link rel="icon" type="image/png" href="/static/show_home/favicon.png">
   </head>
   <body>
-    <nav>
-        <a href="/">Hjem</a>
-        <a href="/upload">Last opp</a>
-        <a href="/clothes">Se klær</a>
-      </nav>
-      
+    <!-- Toppbar (samme markup som på de andre sidene) -->
+    <header class="topbar" role="banner">
+      <div class="container topbar__inner">
+        <a class="brand" href="/" aria-label="Looksy – Hjem">
+          <img src="/static/show_home/logo.jpg" alt="Looksy" height="32">
+        </a>
+        <button class="menu-toggle" aria-label="Åpne/lukk meny" aria-expanded="false" data-js="menu-toggle">☰</button>
+        <nav class="nav" aria-label="Hovedmeny" data-js="nav">
+          <a class="nav__link" href="/">Hjem</a>
+          <a class="nav__link" href="/upload">Last opp</a>
+          <a class="nav__link is-active" href="/clothes">Se klær</a>
+          <a class="button button--primary" href="/show_about">Om oss</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="content" class="container" style="padding:1.25rem 0;">
       <h1>Dine klær</h1>
       <div id="grid"></div>
-
-    <main id="content">
-      <h1>Dine klær</h1>
-      <div id="clothes-grid"></div>
     </main>
   </body>
 </html>
