@@ -4,31 +4,92 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Looksy – Last opp</title>
+
+  <link rel="icon" type="image/png" href="/static/show_home/favicon.png">
   <link rel="stylesheet" href="/static/show_upload/style.css">
   <script src="/static/show_upload/script.js" defer></script>
 </head>
 <body>
-  <nav>
-    <a href="/">Hjem</a>
-    <a href="/upload">Last opp</a>
-    <a href="/clothes">Se klær</a>
-  </nav>
-
-  <h1>Last opp plagg</h1>
-
-  <form id="upload-form">
-    <input id="name" type="text" name="name" placeholder="Navn på plagg" required />
-    <input id="file" type="file" name="file" accept="image/*" required />
-    <button id="process-btn" type="button">Kjør bakgrunnsfjerner</button>
-  </form>
-
-  <section id="result" class="hidden">
-    <h2>Resultat</h2>
-    <img id="preview" alt="Forhåndsvisning" />
-    <div class="actions">
-      <button id="save-btn" type="button">Lagre i database</button>
+  <!-- Top bar -->
+  <header class="topbar" role="banner">
+    <div class="container topbar__inner">
+      <a class="brand" href="/" aria-label="Looksy – Hjem">
+        <img src="/static/show_home/logo.jpg" alt="Looksy" height="32">
+      </a>
+      <button class="menu-toggle" aria-label="Åpne/lukk meny" aria-expanded="false" data-js="menu-toggle">☰</button>
+      <nav class="nav" aria-label="Hovedmeny" data-js="nav">
+        <a class="nav__link" href="/">Hjem</a>
+        <a class="nav__link is-active" href="/upload">Last opp</a>
+        <a class="nav__link" href="/clothes">Se klær</a>
+        <a class="button button--primary" href="/login">Logg inn</a>
+      </nav>
     </div>
-    <p id="status" class="muted"></p>
-  </section>
+  </header>
+
+  <main id="content" class="main">
+    <section class="intro container">
+      <h1>Last opp plagg</h1>
+      <p class="muted">Fjern bakgrunn, forhåndsvis og lagre.</p>
+    </section>
+
+    <section class="container grid">
+      
+      <!-- Upload card -->
+      <article class="card">
+        <header class="card__header">
+          <h2>Last opp bilde</h2>
+          <p class="muted">JPG/PNG opptil 10MB</p>
+        </header>
+
+        <form id="upload-form" class="form" novalidate>
+          <div class="field">
+            <label for="name">Navn på plagg</label>
+            <input id="name" type="text" name="name" placeholder="F.eks. Blå T-skjorte" required />
+          </div>
+
+          <div class="upload" id="dropzone">
+            <input id="file" type="file" name="file" accept="image/*" required />
+            <div class="upload__inner">
+              <div class="upload__icon">⬆️</div>
+              <p><strong>Dra og slipp</strong> eller <span class="link">velg fil</span></p>
+              <small class="muted">Støttede formater: JPG, PNG</small>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="process-btn" type="button" class="button button--primary">Kjør bakgrunnsfjerner</button>
+            <button id="reset-btn" type="button" class="button button--ghost">Nullstill</button>
+          </div>
+        </form>
+      </article>
+
+      <!-- Result card -->
+      <article class="card" id="result" class="hidden">
+        <header class="card__header">
+          <h2>Forhåndsvisning</h2>
+          <p class="muted">Sjekk resultatet før lagring</p>
+        </header>
+
+        <img id="preview" alt="Forhåndsvisning" class="preview" />
+        <div class="actions">
+          <button id="save-btn" type="button" class="button button--primary">Lagre i database</button>
+        </div>
+        <p id="status" class="muted"></p>
+      </article>
+    </section>
+  </main>
+
+  <!-- Tiny JS for mobile nav (page-local) -->
+  <script>
+    (function () {
+      const toggle = document.querySelector('[data-js="menu-toggle"]');
+      const nav = document.querySelector('[data-js="nav"]');
+      if (!toggle || !nav) return;
+      toggle.addEventListener('click', () => {
+        const open = nav.classList.toggle('nav--open');
+        toggle.setAttribute('aria-expanded', String(open));
+      });
+    })();
+  </script>
 </body>
 </html>
