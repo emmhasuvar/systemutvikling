@@ -25,9 +25,9 @@ if (!document.querySelector('.slider')) {
     { image: '/static/show_home/bilde11.jpg', alt: 'Last opp', title: 'Last opp dine egne klær',
       text: 'Finn dine skatter i skapet!', ctaHref: '/upload', ctaText: 'Last opp' },
     { image: '/static/show_home/bilde2.jpg', alt: 'Se klesskapet', title: 'Se ditt klesskap!',
-      text: 'Se gjennom alt du har lastet opp', ctaHref: '/clothes?sale=1', ctaText: 'Kleskap' },
+      text: 'Se gjennom alt du har lastet opp', ctaHref: '/clothes', ctaText: 'Kleskap' },
     { image: '/static/show_home/bilde3.jpg', alt: 'Kommer', title: 'Kommer snart!',
-      text: 'Nye opptatering.', ctaHref: '/clothes?sale=1', ctaText: 'Om oss' }
+      text: 'Nye opptatering.', ctaHref: '/about', ctaText: 'Om oss' }
   ];
 
   const slideHTML = (s, idx) => `
