@@ -44,13 +44,15 @@ class Cloth(Base):
 class Look(Base):
     __tablename__ = "looks"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=True)
-    title = Column(String, nullable=True)
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, nullable=True)
+    title      = Column(String, nullable=True)
+    image_url  = Column(String, nullable=True)   # <-- NYTT: collage-bildet som lagres
     created_at = Column(DateTime, default=datetime.utcnow)
 
     clothes = relationship(
         "Cloth",
         secondary=look_clothes,
         lazy="joined",
+    )
     )
