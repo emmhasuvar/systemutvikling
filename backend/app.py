@@ -56,6 +56,7 @@ app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 HOME_DIR    = os.path.join(PROJECT_ROOT, "frontend", "show_home")
 UPLOAD_DIR  = os.path.join(PROJECT_ROOT, "frontend", "show_upload")
 CLOTHES_DIR = os.path.join(PROJECT_ROOT, "frontend", "show_clothes")
+LAGLOOKS_DIR = os.path.join(PROJECT_ROOT, "frontend", "show_lag_looks") 
 
 app.mount("/static", StaticFiles(directory=os.path.join(PROJECT_ROOT, "frontend")), name="static")
 
@@ -71,7 +72,13 @@ def upload_page():
 def clothes_page():
     return FileResponse(os.path.join(CLOTHES_DIR, "index.html"))
 
+@app.get("/lag-looks", include_in_schema=False)
+def lag_looks_page():
+    return FileResponse(os.path.join(LAGLOOKS_DIR, "index.html"))
 
+@app.get("/looks", include_in_schema=False)
+def looks_page_alias():
+    return FileResponse(os.path.join(LAGLOOKS_DIR, "index.html"))
 # -----------------------------
 # Bakgrunnsfjerner (rembg)
 # -----------------------------

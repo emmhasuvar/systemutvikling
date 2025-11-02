@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="utf-8" />
+    <title>Looksy – Lag Looks</title>
+
+    <!-- Felles stil først (samme som de andre sidene) -->
+    <link rel="stylesheet" href="/static/show_clothes/style.css" />
+    <link rel="icon" type="image/png" href="/static/show_home/favicon.png">
+
+    <!-- Side-spesifikk stil for Lag Looks -->
+    <link rel="stylesheet" href="/static/show_lag_looks/style.css" />
+  </head>
+
+  <body>
+    <!-- Toppbar (samme markup som på de andre sidene) -->
+    <header class="topbar" role="banner">
+      <div class="container topbar__inner">
+        <a class="brand" href="/" aria-label="Looksy – Hjem">
+          <img src="/static/show_home/logo.jpg" alt="Looksy" height="32">
+        </a>
+        <button class="menu-toggle" aria-label="Åpne/lukk meny" aria-expanded="false" data-js="menu-toggle">☰</button>
+        <nav class="nav" aria-label="Hovedmeny" data-js="nav">
+          <a class="nav__link" href="/">Hjem</a>
+          <a class="nav__link" href="/upload">Last opp</a>
+          <a class="nav__link" href="/clothes">Se klær</a>
+          <a class="button button--primary is-active" href="/looks">Looks</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Side-innhold (scopes med .looks for å unngå CSS-konflikt) -->
+    <div class="container looks">
+      <h1 class="looks__title">Lag Looks</h1>
+      <p class="looks__lead">Dra plagg inn på canvaset, arranger, og lagre som JPG.</p>
+
+      <!-- Verktøylinje -->
+      <div class="looks__toolbar">
+        <label class="looks__label" for="title">Tittel</label>
+        <input id="title" type="text" class="looks__input" placeholder="Casual fredag" />
+        <button id="btnClear" class="looks__btn">Tøm canvas</button>
+        <button id="btnSave" class="looks__btn looks__btn--primary">Lagre som JPG</button>
+        <span class="looks__hint">Tips: Hold <kbd class="looks__kbd">Shift</kbd> for å skalere, <kbd class="looks__kbd">⌫</kbd> for å slette valgt.</span>
+      </div>
+
+      <!-- Hovedlayout: Sidepanel + Canvas -->
+      <main class="looks__layout">
+        <aside id="sidebar" class="looks__sidebar" aria-label="Dine plagg">
+          <div class="looks__sidebarHeader">Dine plagg</div>
+          <div id="clothesList" class="looks__list"></div>
+        </aside>
+
+        <section id="stageWrap" class="looks__stageWrap" aria-label="Canvas">
+          <canvas id="stage" class="looks__stage"></canvas>
+          <div id="hint" class="looks__stageHint">Dra plagg hit</div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="footer">
+      <div class="container">© Looksy</div>
+    </footer>
+  </body>
+</html>

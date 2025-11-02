@@ -1,0 +1,132 @@
+
+
+/* Keep primary button visible and filled when active */
+.topbar .button--primary.is-active {
+  background: var(--cta);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+/* --- Page wrapper --- */
+.looks { padding-block: 1.25rem 2rem; color: var(--text); }
+.looks__title { margin: 0 0 .5rem; }
+.looks__lead { margin: 0 0 1rem; color: var(--muted); }
+
+/* --- Toolbar --- */
+.looks__toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .6rem;
+  margin-bottom: .75rem;
+}
+.looks__label { font-size: .875rem; color: #374151; }
+.looks__input {
+  padding: .55rem .7rem; width: 240px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: #fff;
+}
+.looks__btn {
+  padding: .55rem .9rem; border: 1px solid var(--border);
+  background: #fff; border-radius: .7rem; cursor: pointer;
+  transition: background .2s ease, transform .12s ease;
+}
+.looks__btn:hover { background: var(--surface); }
+.looks__btn:active { transform: translateY(1px); }
+.looks__btn--primary {
+  background: var(--cta); color: #fff; border-color: var(--cta);
+  box-shadow: var(--shadow);
+}
+.looks__hint { font-size: .8rem; color: var(--muted); }
+.looks__kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px;
+  padding: 2px 6px;
+}
+
+/* --- Main layout: sidebar + canvas --- */
+.looks__layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+}
+@media (max-width: 980px) {
+  .looks__layout { grid-template-columns: 1fr; }
+}
+
+/* --- Sidebar (Dine plagg) --- */
+.looks__sidebar {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  overflow: clip;
+  box-shadow: var(--shadow);
+}
+.looks__sidebarHeader {
+  padding: .75rem .9rem;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.looks__list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
+}
+
+/* Optional helpers for cards built via JS */
+.looks__card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+  display: flex; flex-direction: column; gap: 8px; text-align: center;
+  box-shadow: var(--shadow);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.looks__card:hover { transform: translateY(-2px); }
+.looks__thumb {
+  width: 100%; height: 180px; object-fit: contain;
+  background: var(--surface); border-radius: 8px;
+}
+
+/* --- Canvas (stage) --- */
+.looks__stageWrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+.looks__stage {
+  width: 100%;
+  max-width: 1200px;
+  aspect-ratio: 4 / 3;
+  background: var(--surface);
+  border: 1px dashed rgba(0,0,0,.12);
+  border-radius: 12px;
+  display: block;
+}
+.looks__stageHint {
+  position: absolute; inset: 12px;
+  display: grid; place-items: center;
+  color: var(--muted);
+  pointer-events: none;
+  font-size: .9rem;
+}
+
+/* --- Footer --- */
+.footer {
+  border-top: 1px solid rgba(0,0,0,.06);
+  padding: 18px 0;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+/* --- Utility (for JS-added buttons) --- */
+.looks .btn {
+  padding: .5rem .8rem;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: .7rem;
+  cursor: pointer;
+}
+.looks .btn:hover { background: var(--surface); }
