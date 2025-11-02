@@ -56,7 +56,6 @@ a{ color:inherit; text-decoration:none; }
 .nav{ display:flex; align-items:center; gap:.9rem; }
 .nav__link{ padding:.5rem .7rem; border-radius:.6rem; }
 .nav__link:hover{ background:var(--surface); }
-/* Active state for plain links */
 .nav .is-active, .nav__link.is-active{ background:var(--surface); font-weight:700; }
 
 /* Buttons */
@@ -140,11 +139,10 @@ h1{ margin:0 0 .5rem; }
 .product-info{ padding:.9rem 1rem; text-align:left; }
 .product-name{ font-weight:700; font-size:1rem; margin-bottom:6px; }
 .product-category{ font-size:.85rem; color:var(--muted); }
-/* disable any legacy badge */
 .product-card::after{ content:none !important; }
 
 /* =========================
-   EDIT POPUP (rename / recategorize / delete)
+   EDIT POPUP (clothes)
 ========================= */
 .edit-popup{
   position:fixed; inset:0;
@@ -152,7 +150,7 @@ h1{ margin:0 0 .5rem; }
   background:rgba(0,0,0,.4);
   opacity:0; pointer-events:none;
   transition:opacity .2s ease;
-  z-index:3001; /* ABOVE magazine overlay */
+  z-index:3001; /* ABOVE magazine and look viewer */
 }
 .edit-popup.show{ opacity:1; pointer-events:auto; }
 .edit-popup__content{
@@ -188,7 +186,7 @@ h1{ margin:0 0 .5rem; }
   position:fixed; inset:0;
   background:rgba(0,0,0,.45);
   display:flex; align-items:center; justify-content:center;
-  z-index:2000; /* UNDER edit-popup */
+  z-index:2000;
 }
 .mag-sheet{
   width:min(1100px,92vw); max-height:92vh;
@@ -222,7 +220,87 @@ h1{ margin:0 0 .5rem; }
   border-radius:8px; padding:.25rem .5rem; cursor:pointer; font-weight:700;
 }
 .mag-edit:hover{ background:var(--surface); }
-
 @media (max-width:900px){
   .mag-grid{ grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); }
 }
+
+/* =========================
+   BIG LOOK VIEWER (image + clothes sidebar)
+========================= */
+.lookview-overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.5);
+  display:flex; align-items:center; justify-content:center;
+  z-index:2500; /* above magazine, below edit popup */
+}
+.lookview-sheet{
+  width:min(1200px, 94vw);
+  max-height:94vh;
+  background:#fff; color:var(--text);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  display:flex; flex-direction:column;
+}
+.lookview-head{
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px; border-bottom:1px solid var(--border);
+}
+.lookview-title{ display:flex; flex-direction:column; gap:2px; }
+.lookview-title strong{ font-size:1.05rem; }
+.lookview-date{ font-size:.85rem; color:var(--muted); }
+.lookview-close{
+  border:1px solid var(--border); background:#fff; border-radius:10px;
+  padding:.4rem .8rem; cursor:pointer;
+}
+.lookview-close:hover{ background:var(--surface); }
+
+.lookview-grid{
+  display:grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap:0; min-height:0;
+}
+@media (max-width: 900px){
+  .lookview-grid{ grid-template-columns:1fr; }
+}
+
+.lookview-canvas{
+  padding:12px;
+  display:flex; align-items:center; justify-content:center;
+  border-right:1px solid var(--border);
+}
+@media (max-width: 900px){
+  .lookview-canvas{ border-right:0; border-bottom:1px solid var(--border); }
+}
+
+.lookview-img{
+  width:100%; height:auto; max-height:72vh;
+  object-fit:contain; background:var(--surface);
+  border-radius:12px;
+}
+
+.lookview-sidebar{
+  padding:12px;
+  display:flex; flex-direction:column; gap:10px;
+  min-height:0;
+}
+.lookview-subtitle{ margin:0; font-size:1rem; }
+.lookview-list{
+  overflow:auto;
+  display:flex; flex-direction:column; gap:10px;
+  padding-right:2px;
+}
+
+.lv-item{
+  display:flex; gap:10px; align-items:center;
+  border:1px solid var(--border);
+  border-radius:12px; background:#fff;
+  padding:8px; box-shadow:0 4px 12px rgba(0,0,0,.05);
+}
+.lv-thumb{
+  width:64px; height:64px; object-fit:contain;
+  background:var(--surface); border-radius:8px;
+}
+.lv-meta{ display:flex; flex-direction:column; line-height:1.25; }
+.lv-name{ font-weight:700; }
+.lv-cat{ font-size:.85rem; color:var(--muted); }

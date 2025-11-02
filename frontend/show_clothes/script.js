@@ -10,7 +10,7 @@ const openMagBtn = document.getElementById("openMagazine");
 const state = { looks: [] };
 
 // Safety: remove any stale overlays from previous reloads
-document.querySelectorAll(".mag-overlay, .edit-popup").forEach(el => el.remove());
+document.querySelectorAll(".mag-overlay, .edit-popup, .lookview-overlay").forEach(el => el.remove());
 
 // --------------------------------------------------
 // Helpers
@@ -205,12 +205,82 @@ gridEl.addEventListener("click", (e) => {
 });
 
 // --------------------------------------------------
-// Magasin (overlay) — view, rename, delete LOOKS
+// Looks — fetch, magazine overlay, big viewer, rename/delete
 // --------------------------------------------------
 async function fetchLooks() {
   const res = await fetch(`${API}/looks`);
   if (!res.ok) throw new Error(`Fetch looks failed: ${res.status}`);
   return res.json();
+}
+
+async function fetchLookById(id) {
+  const r = await fetch(`${API}/looks/${id}`);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json(); // { id, title, image_url, created_at, clothes: [...] }
+}
+
+function openLookViewer(look) {
+  // remove any existing viewer
+  document.querySelectorAll(".lookview-overlay").forEach(el => el.remove());
+
+  const overlay = document.createElement("div");
+  overlay.className = "lookview-overlay";
+  overlay.innerHTML = `
+    <div class="lookview-sheet" role="dialog" aria-modal="true" aria-label="Se look">
+      <header class="lookview-head">
+        <div class="lookview-title">
+          <strong>${escapeHtml(look.title || `Look #${look.id}`)}</strong>
+          <span class="lookview-date">${look.created_at ? new Date(look.created_at).toLocaleString() : ""}</span>
+        </div>
+        <span class="mag-spacer"></span>
+        <button class="lookview-close">Lukk</button>
+      </header>
+
+      <div class="lookview-grid">
+        <div class="lookview-canvas">
+          <img class="lookview-img" src="${normalizeMediaPath(look.image_url || '')}" alt="">
+        </div>
+
+        <aside class="lookview-sidebar">
+          <h3 class="lookview-subtitle">Plagg i looken</h3>
+          <div class="lookview-list">
+            ${
+              (look.clothes || []).map(c => `
+                <article class="lv-item" data-cloth-id="${c.id}">
+                  <img class="lv-thumb" src="${normalizeMediaPath(c.image_url || '')}" alt="">
+                  <div class="lv-meta">
+                    <div class="lv-name">${escapeHtml(c.name || `Plagg #${c.id}`)}</div>
+                    <div class="lv-cat">${escapeHtml(c.category || '')}</div>
+                  </div>
+                </article>
+              `).join('') || `<p class="muted">Ingen plagg registrert.</p>`
+            }
+          </div>
+        </aside>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // image fallback for main + thumbs
+  const mainImg = overlay.querySelector(".lookview-img");
+  attachImageFallback(mainImg);
+  overlay.querySelectorAll(".lv-thumb").forEach(attachImageFallback);
+
+  // close handlers
+  const close = () => overlay.remove();
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector(".lookview-close").addEventListener("click", close);
+}
+
+async function openLookViewerById(lookId) {
+  try {
+    const look = await fetchLookById(lookId);
+    openLookViewer(look);
+  } catch (err) {
+    console.error(err);
+    alert("Kunne ikke åpne looken.");
+  }
 }
 
 function renderLooksGrid(looks) {
@@ -239,10 +309,10 @@ function renderLooksGrid(looks) {
     const id = Number(card.getAttribute("data-look-id"));
     const look = state.looks.find(x => x.id === id);
 
-    // click anywhere opens editor
-    card.addEventListener("click", () => openLookEditor(look));
+    // CLICK: open BIG VIEWER (large image + sidebar of clothes)
+    card.addEventListener("click", () => openLookViewerById(id));
 
-    // make sure the small button doesn't double-bubble
+    // ✎ button: rename/delete editor
     card.querySelector(".mag-edit").addEventListener("click", (e) => {
       e.stopPropagation();
       openLookEditor(look);
