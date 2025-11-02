@@ -139,8 +139,9 @@ async def remove_bg_endpoint(file: UploadFile = File(...)):
 # -----------------------------
 # API-ruter
 # -----------------------------
-app.include_router(clothes_router.router)
-app.include_router(looks_router.router)
+app.include_router(clothes_router.router, prefix="/api")
+app.include_router(looks_router.router,   prefix="/api")
+
 
 @app.get("/healthz", tags=["utils"])
 def healthz():

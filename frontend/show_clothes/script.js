@@ -1,4 +1,5 @@
-const API = 'http://127.0.0.1:8000'; // bruk location.origin hvis backend og frontend deler host/port
+// Use same-origin + /api to avoid hardcoding localhost
+const API = `${location.origin}/api`;
 
 const filtersEl = document.getElementById('category-filters');
 const gridEl    = document.getElementById('clothes-grid');
@@ -13,6 +14,7 @@ async function fetchClothes(category = '') {
   if (!res.ok) throw new Error(`Fetch clothes failed: ${res.status}`);
   return await res.json();
 }
+
 
 function renderClothes(items) {
   if (!gridEl) return;

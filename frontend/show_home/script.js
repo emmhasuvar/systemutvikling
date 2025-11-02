@@ -26,8 +26,8 @@ if (!document.querySelector('.slider')) {
       text: 'Finn dine skatter i skapet!', ctaHref: '/upload', ctaText: 'Last opp' },
     { image: '/static/show_home/bilde2.jpg', alt: 'Se klesskapet', title: 'Se ditt klesskap!',
       text: 'Se gjennom alt du har lastet opp', ctaHref: '/clothes', ctaText: 'Kleskap' },
-    { image: '/static/show_home/bilde3.jpg', alt: 'Kommer', title: 'Kommer snart!',
-      text: 'Nye opptatering.', ctaHref: '/about', ctaText: 'Om oss' }
+    { image: '/static/show_home/bilde3.jpg', alt: 'Kommer', title: 'Se dine antrekk!',
+      text: 'Begynn å planlegg antrekk', ctaHref: '/looks', ctaText: 'Lag Looks' }
   ];
 
   const slideHTML = (s, idx) => `

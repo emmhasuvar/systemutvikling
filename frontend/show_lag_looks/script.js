@@ -1,190 +1,199 @@
+// Use the same origin the page was served from, plus /api
+const API_BASE   = `${location.origin}/api`;
+const CLOTHES_EP = `${API_BASE}/clothes`;
+const LOOKS_EP   = `${API_BASE}/looks`;
 
-      // ----- config -----
-      const API_BASE = '/api';          // endre hvis du ikke la router under /api
-      const CLOTHES_URL = API_BASE + '/clothes';
-      const LOOKS_URL   = API_BASE + '/looks';
+// --- DOM refs ---
+const canvas   = document.getElementById('stage');
+const ctx      = canvas.getContext('2d', { alpha: false });
+const listEl   = document.getElementById('clothesList');
+const hintEl   = document.getElementById('hint');
+const titleEl  = document.getElementById('title');
+const btnSave  = document.getElementById('btnSave');
+const btnClear = document.getElementById('btnClear');
 
-      // ----- state -----
-      const canvas = document.getElementById('stage');
-      const ctx = canvas.getContext('2d', { alpha: false });
-      const hint = document.getElementById('hint');
-      const titleInput = document.getElementById('title');
-      let sprites = [];       // {id, img, x, y, w, h, selected}
-      let dragging = null;    // index of sprite being dragged
-      let last = {x:0, y:0};
-      let shiftDown = false;
+// --- State ---
+let sprites = [];        // { id, img, x, y, w, h, selected }
+let dragging = null;
+let last = { x: 0, y: 0 };
+let shiftDown = false;
 
-      // ----- resize canvas to CSS size -----
-      function fitCanvasToDisplay() {
-        const rect = canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width  = Math.round(rect.width * dpr);
-        canvas.height = Math.round(rect.height * dpr);
-        ctx.scale(dpr, dpr);
-        render();
-      }
-      new ResizeObserver(fitCanvasToDisplay).observe(canvas);
+// --- Utilities (unchanged) ---
+function fitCanvasToDisplay() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr, dpr);
+  render();
+}
+new ResizeObserver(fitCanvasToDisplay).observe(canvas);
 
-      // ----- load clothes and render thumbnails -----
-      async function loadClothes() {
-        const res = await fetch(CLOTHES_URL);
-        const items = await res.json(); // expect [{id, image_url, ...}]
-        const list = document.getElementById('clothesList');
-        list.innerHTML = '';
-        items.forEach(it => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          const img = document.createElement('img');
-          img.className = 'thumb';
-          img.src = it.image_url;
-          img.alt = it.name || ('Cloth ' + it.id);
-          const btn = document.createElement('button');
-          btn.className = 'btn';
-          btn.textContent = 'Legg til';
-          btn.onclick = () => addSprite(it);
-          card.appendChild(img);
-          card.appendChild(document.createTextNode(it.name || ('Plagg #' + it.id)));
-          card.appendChild(btn);
-          list.appendChild(card);
-        });
-      }
+function render() {
+  const rect = canvas.getBoundingClientRect();
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, rect.width, rect.height);
 
-      // ----- add sprite to canvas -----
-      function addSprite(item) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          // initial size capped to 220px width, keep aspect
-          const maxW = 220;
-          const scale = Math.min(1, maxW / img.width);
-          const w = Math.max(40, img.width * scale);
-          const h = Math.max(40, img.height * scale);
-          const x = 40 + Math.random()*60;
-          const y = 40 + Math.random()*60;
-          sprites.push({ id: item.id, img, x, y, w, h, selected:false });
-          hint.style.display = 'none';
-          render();
-        };
-        img.src = item.image_url;
-      }
+  sprites.forEach(s => {
+    ctx.drawImage(s.img, s.x, s.y, s.w, s.h);
+    if (s.selected) {
+      ctx.save();
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = '#9ca3af';
+      ctx.strokeRect(s.x, s.y, s.w, s.h);
+      ctx.restore();
+    }
+  });
+}
 
-      // ----- draw -----
-      function render() {
-        const rect = canvas.getBoundingClientRect();
-        ctx.clearRect(0,0, rect.width, rect.height);
-        // bg
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0,0, rect.width, rect.height);
+function pick(x, y) {
+  for (let i = sprites.length - 1; i >= 0; i--) {
+    const s = sprites[i];
+    if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) return i;
+  }
+  return -1;
+}
 
-        // draw each sprite
-        sprites.forEach(s => {
-          ctx.save();
-          ctx.drawImage(s.img, s.x, s.y, s.w, s.h);
-          if (s.selected) {
-            ctx.strokeStyle = '#888';
-            ctx.setLineDash([6,4]);
-            ctx.lineWidth = 1;
-            ctx.strokeRect(s.x, s.y, s.w, s.h);
-          }
-          ctx.restore();
-        });
-      }
+function toLocal(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
 
-      // ----- hit test -----
-      function pick(x, y) {
-        for (let i = sprites.length - 1; i >= 0; i--) {
-          const s = sprites[i];
-          if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) {
-            return i;
-          }
-        }
-        return -1;
-      }
+function addSpriteFromCloth(cloth) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    const maxW = 220;
+    const scale = Math.min(1, maxW / img.width);
+    const w = Math.max(40, img.width * scale);
+    const h = Math.max(40, img.height * scale);
+    const x = 40 + Math.random() * 60;
+    const y = 40 + Math.random() * 60;
+    sprites.push({ id: cloth.id, img, x, y, w, h, selected: false });
+    hintEl.style.display = 'none';
+    render();
+  };
+  img.onerror = () => console.warn('Could not load image:', cloth.image_url);
+  img.src = cloth.image_url; // served by /media
+}
 
-      // ----- mouse handlers -----
-      function toLocal(e) {
-        const r = canvas.getBoundingClientRect();
-        return { x: e.clientX - r.left, y: e.clientY - r.top };
-      }
+function makeClothCard(cloth) {
+  const wrap = document.createElement('div');
+  wrap.className = 'looks__card';
 
-      canvas.addEventListener('mousedown', (e) => {
-        const p = toLocal(e);
-        last = p;
-        const i = pick(p.x, p.y);
-        sprites.forEach(s => s.selected = false);
-        if (i >= 0) {
-          sprites[i].selected = true;
-          dragging = i;
-          // bring to top
-          const s = sprites.splice(i,1)[0];
-          sprites.push(s);
-          dragging = sprites.length - 1;
-        } else {
-          dragging = null;
-        }
-        render();
-      });
+  const img = document.createElement('img');
+  img.className = 'looks__thumb';
+  img.src = cloth.image_url;
+  img.alt = cloth.name || `Plagg #${cloth.id}`;
 
-      canvas.addEventListener('mousemove', (e) => {
-        if (dragging == null) return;
-        const p = toLocal(e);
-        const dx = p.x - last.x;
-        const dy = p.y - last.y;
-        const s = sprites[dragging];
-        if (shiftDown) {
-          // scale uniformly with dy
-          const k = 1 + dy / 150;
-          const cx = s.x + s.w/2, cy = s.y + s.h/2;
-          const nw = Math.max(20, s.w * k);
-          const nh = Math.max(20, s.h * k);
-          s.x = cx - nw/2; s.y = cy - nh/2; s.w = nw; s.h = nh;
-        } else {
-          s.x += dx; s.y += dy;
-        }
-        last = p;
-        render();
-      });
+  const title = document.createElement('div');
+  title.className = 'looks__cardTitle';
+  title.textContent = cloth.name || `Plagg #${cloth.id}`;
 
-      window.addEventListener('mouseup', () => dragging = null);
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Shift') shiftDown = true;
-        if (e.key === 'Backspace' || e.key === 'Delete') {
-          const i = sprites.findIndex(s => s.selected);
-          if (i >= 0) { sprites.splice(i,1); render(); }
-        }
-      });
-      window.addEventListener('keyup', (e) => { if (e.key === 'Shift') shiftDown = false; });
+  const btn = document.createElement('button');
+  btn.className = 'looks__btn';
+  btn.textContent = 'Legg til';
+  btn.addEventListener('click', () => addSpriteFromCloth(cloth));
 
-      // ----- actions -----
-      document.getElementById('btnClear').onclick = () => { sprites = []; hint.style.display=''; render(); };
+  wrap.append(img, title, btn);
+  return wrap;
+}
 
-      document.getElementById('btnSave').onclick = async () => {
-        if (!sprites.length) return alert('Legg til minst ett plagg');
-        const title = titleInput.value.trim() || null;
+// --- Load clothes from backend ---
+async function loadClothes() {
+  try {
+    const res = await fetch(CLOTHES_EP);
+    if (!res.ok) throw new Error(await res.text());
+    const items = await res.json();
+    if (!Array.isArray(items)) throw new Error('Unexpected response from /api/clothes');
 
-        // Export to JPG
-        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+    listEl.innerHTML = '';
+    items.forEach(it => listEl.appendChild(makeClothCard(it)));
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = '<p class="muted">Kunne ikke hente plagg.</p>';
+  }
+}
 
-        // Collect cloth IDs present on canvas (no duplicates)
-        const ids = [...new Set(sprites.map(s => s.id))];
+// --- Interactions & buttons (unchanged) ---
+canvas.addEventListener('mousedown', (e) => {
+  const p = toLocal(e);
+  last = p;
+  const i = pick(p.x, p.y);
+  sprites.forEach(s => (s.selected = false));
+  if (i >= 0) {
+    sprites[i].selected = true;
+    const s = sprites.splice(i, 1)[0];
+    sprites.push(s);
+    dragging = sprites.length - 1;
+  } else {
+    dragging = null;
+  }
+  render();
+});
 
-        const fd = new FormData();
-        fd.append('file', blob, 'look.jpg');
-        fd.append('cloth_ids', JSON.stringify(ids));
-        if (title) fd.append('title', title);
+canvas.addEventListener('mousemove', (e) => {
+  if (dragging == null) return;
+  const p = toLocal(e);
+  const s = sprites[dragging];
 
-        const r = await fetch(LOOKS_URL + '/', { method: 'POST', body: fd });
-        if (!r.ok) {
-          const msg = await r.text();
-          return alert('Kunne ikke lagre look: ' + msg);
-        }
-        const saved = await r.json();
-        alert('Lagret! ID ' + saved.id);
-      };
+  if (shiftDown) {
+    const dy = p.y - last.y;
+    const k = 1 + dy / 150;
+    const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+    const nw = Math.max(20, s.w * k);
+    const nh = Math.max(20, s.h * k);
+    s.x = cx - nw / 2; s.y = cy - nh / 2; s.w = nw; s.h = nh;
+  } else {
+    s.x += p.x - last.x;
+    s.y += p.y - last.y;
+  }
 
-      // boot
-      fitCanvasToDisplay();
-      loadClothes().catch(err => {
-        console.error(err);
-        document.getElementById('clothesList').innerHTML = '<p class="small" style="padding:12px;color:#a00;">Kunne ikke hente plagg.</p>';
-      });
+  last = p;
+  render();
+});
+
+window.addEventListener('mouseup', () => (dragging = null));
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Shift') shiftDown = true;
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    const i = sprites.findIndex(s => s.selected);
+    if (i >= 0) { sprites.splice(i, 1); render(); }
+  }
+});
+window.addEventListener('keyup', (e) => { if (e.key === 'Shift') shiftDown = false; });
+
+btnClear.addEventListener('click', () => {
+  sprites = [];
+  hintEl.style.display = '';
+  render();
+});
+
+btnSave.addEventListener('click', async () => {
+  if (!sprites.length) return alert('Legg til minst ett plagg');
+  const title = (titleEl.value || '').trim() || null;
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+  const ids = [...new Set(sprites.map(s => s.id))];
+
+  const fd = new FormData();
+  fd.append('file', blob, 'look.jpg');
+  fd.append('cloth_ids', JSON.stringify(ids));
+  if (title) fd.append('title', title);
+
+  try {
+    const r = await fetch(LOOKS_EP, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(await r.text());
+    const saved = await r.json();
+    alert('Lagret! ID: ' + saved.id);
+  } catch (err) {
+    console.error(err);
+    alert('Kunne ikke lagre look.');
+  }
+});
+
+// --- boot ---
+fitCanvasToDisplay();
+loadClothes();
