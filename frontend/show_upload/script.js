@@ -1,7 +1,6 @@
-// Auto-detect correct API base
-const ORIGIN = location.origin;       // e.g. http://127.0.0.1:8000
-const API    = `${ORIGIN}/api`;       // backend routes (e.g. /api/clothes/)
-const UTIL   = ORIGIN;                // utility routes like /remove-bg
+const ORIGIN = location.origin;    
+const API    = `${ORIGIN}/api`;       
+const UTIL   = ORIGIN;                
 
 /* ==============================
    Mobile nav toggle
