@@ -9,7 +9,6 @@ from sqlalchemy.orm import relationship
 from .database import Base
 
 
-# Underkategorier for plagg
 class ClothCategory(str, Enum):
     topp = "topp"
     underdel = "underdel"
@@ -17,7 +16,6 @@ class ClothCategory(str, Enum):
     tilbehør = "tilbehør"
 
 
-# Many-to-many kobling mellom looks og clothes
 look_clothes = Table(
     "look_clothes",
     Base.metadata,
@@ -33,21 +31,17 @@ class Cloth(Base):
     user_id = Column(Integer, nullable=True)
     name = Column(String, nullable=False)
     image_url = Column(String, nullable=False)
-
-    # Ny kolonne: underkategori
-    # native_enum=False -> lagres som TEXT (spesielt fint for SQLite)
     category = Column(SAEnum(ClothCategory, native_enum=False), nullable=False, index=True)
-
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class Look(Base):
     __tablename__ = "looks"
 
-    id         = Column(Integer, primary_key=True, index=True)
-    user_id    = Column(Integer, nullable=True)
-    title      = Column(String, nullable=True)
-    image_url  = Column(String, nullable=True)   # <-- NYTT: collage-bildet som lagres
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=True)
+    title = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)     # collage stored under /media/...
     created_at = Column(DateTime, default=datetime.utcnow)
 
     clothes = relationship(
@@ -55,4 +49,3 @@ class Look(Base):
         secondary=look_clothes,
         lazy="joined",
     )
-    

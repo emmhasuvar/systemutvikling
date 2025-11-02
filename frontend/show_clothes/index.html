@@ -29,19 +29,38 @@
       <h1 class="page-title">Dine klær</h1>
       <p class="page-sub muted">Utforsk, rediger eller slett plaggene dine.</p>
 
-      <!-- FILTER BAR -->
-      <div class="filters" id="category-filters"
-           style="display:flex; gap:.5rem; flex-wrap:wrap; margin:0 0 1rem;">
-        <button class="chip is-active" data-category="">Alle</button>
-        <button class="chip" data-category="topp">Topper</button>
-        <button class="chip" data-category="underdel">Underdeler</button>
-        <button class="chip" data-category="sko">Sko</button>
-        <button class="chip" data-category="tilbehør">Tilbehør</button>
-      </div>
+      <h1 class="page-title">Dine klær</h1>
+<p class="page-sub muted">Utforsk garderoben din eller bla i magasinet med lagrede looks.</p>
 
-      <!-- GRID -->
-      <section id="clothes-grid" class="product-grid"></section>
-    </main>
+<!-- FILTERS + MAGAZINE TOGGLE -->
+<div class="filters" id="category-filters" style="display:flex; gap:.5rem; flex-wrap:wrap; margin:0 0 1rem;">
+  <button class="chip is-active" data-category="">Alle</button>
+  <button class="chip" data-category="topp">Topper</button>
+  <button class="chip" data-category="underdel">Underdeler</button>
+  <button class="chip" data-category="sko">Sko</button>
+  <button class="chip" data-category="tilbehør">Tilbehør</button>
+
+  <!-- Magasin toggle (acts like a chip) -->
+  <button class="chip chip--ghost" id="openMagazine" style="margin-left:auto;">Magasin (looks)</button>
+</div>
+
+<!-- CLOTHES GRID -->
+<section id="clothes-grid" class="product-grid"></section>
+
+<!-- LOOKS MAGAZINE (hidden by default) -->
+<section id="looks-mag" class="mag hidden" aria-label="Magasin">
+  <div class="mag-controls">
+    <button class="mag-btn" id="magPrev" aria-label="Forrige">‹</button>
+    <span class="mag-page" id="magLabel">Side 1 / 1</span>
+    <button class="mag-btn" id="magNext" aria-label="Neste">›</button>
+    <button class="chip chip--ghost" id="closeMagazine" style="margin-left:auto;">Tilbake til klær</button>
+  </div>
+  <div class="mag-spread">
+    <div class="mag-page-sheet" id="magLeft"></div>
+    <div class="mag-page-sheet" id="magRight"></div>
+  </div>
+</section>
+
 
     <!-- MODAL -->
     <div id="clothModal" class="modal hidden">

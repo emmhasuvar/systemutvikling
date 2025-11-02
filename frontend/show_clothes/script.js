@@ -1,139 +1,268 @@
-const API = `${location.origin}/api`;
-const filtersEl = document.getElementById('category-filters');
-const gridEl = document.getElementById('clothes-grid');
-let currentCategory = '';
+// --------------------------------------------------
+// Base
+// --------------------------------------------------
+const API        = `${location.origin}/api`;
+const filtersEl  = document.getElementById("category-filters");
+const gridEl     = document.getElementById("clothes-grid");
+const openMagBtn = document.getElementById("openMagazine");
 
-// --- Fetch & Render Clothes ---
-async function fetchClothes(category = '') {
-  const url = category ? `${API}/clothes/?category=${encodeURIComponent(category)}` : `${API}/clothes/`;
+// Safety: remove any stale overlays from previous reloads
+document.querySelectorAll(".mag-overlay, .edit-popup").forEach(el => el.remove());
+
+// --------------------------------------------------
+// Helpers
+// --------------------------------------------------
+function escapeHtml(s = "") {
+  return s.replaceAll("&","&amp;")
+          .replaceAll("<","&lt;")
+          .replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;")
+          .replaceAll("'","&#39;");
+}
+
+/** Normalize any server path to a web URL under /media if needed */
+function normalizeMediaPath(u = "") {
+  if (!u) return "";
+  if (/^https?:\/\//i.test(u)) return u;                 // absolute
+  const idx = u.indexOf("/media/");                      // contains /media/
+  if (idx !== -1) return u.slice(idx);
+  if (u.startsWith("media/")) return "/" + u;            // starts with media/
+  // fallback: basename
+  const qpos = u.indexOf("?"); const bare = qpos >= 0 ? u.slice(0, qpos) : u;
+  const parts = bare.split(/[\\/]/); const fname = parts.pop() || "";
+  return fname ? `/media/${fname}` : "";
+}
+
+/** If image fails, retry with basename and absolute origin once */
+function attachImageFallback(img) {
+  let triedBasename = false, triedAbsolute = false;
+  img.addEventListener("error", () => {
+    const cur = img.getAttribute("src") || "";
+    const base = cur.split(/[\\/]/).pop() || "";
+    if (!triedBasename && base && !cur.endsWith(base)) {
+      triedBasename = true; img.src = `/media/${base}`; return;
+    }
+    if (!triedAbsolute && cur && !/^https?:\/\//i.test(cur)) {
+      triedAbsolute = true; img.src = `${location.origin}${cur.startsWith("/") ? "" : "/"}${cur}`; return;
+    }
+  });
+}
+
+// --------------------------------------------------
+// Clothes grid
+// --------------------------------------------------
+async function fetchClothes(category = "") {
+  const url = category ? `${API}/clothes/?category=${encodeURIComponent(category)}`
+                       : `${API}/clothes/`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch');
-  return await res.json();
+  if (!res.ok) throw new Error(`Fetch clothes failed: ${res.status}`);
+  return res.json();
 }
 
-function renderClothes(items) {
-  gridEl.innerHTML = items.map(item => `
-    <article class="product-card" data-id="${item.id}">
-      <img src="${item.image_url}" alt="${item.name}">
-      <div class="product-info">
-        <div class="product-brand">Looksy</div>
-        <div class="product-name">${escapeHtml(item.name)}</div>
-        <div class="product-meta">
-          <span class="product-category">${escapeHtml(item.category)}</span>
+function renderClothes(items = []) {
+  if (!Array.isArray(items) || items.length === 0) {
+    gridEl.innerHTML = `
+      <div class="card" style="padding:1rem;">
+        <p class="muted">Ingen plagg i denne kategorien enda.</p>
+      </div>`;
+    return;
+  }
+
+  gridEl.innerHTML = items.map(item => {
+    const src = normalizeMediaPath(item.image_url || "");
+    return `
+      <article class="product-card" tabindex="0"
+               data-id="${item.id}" data-name="${escapeHtml(item.name || "")}" data-category="${escapeHtml(item.category || "")}">
+        <img class="product-img" src="${src}" alt="${escapeHtml(item.name || "")}" />
+        <div class="product-info">
+          <div class="product-name">${escapeHtml(item.name || "")}</div>
+          <div class="product-category">${escapeHtml(item.category || "")}</div>
         </div>
-      </div>
-    </article>
-  `).join('');
+      </article>`;
+  }).join("");
 
-  gridEl.querySelectorAll('.product-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const clothId = card.dataset.id;
-      const cloth = items.find(it => it.id == clothId);
-      openPopup(cloth);
-    });
-  });
+  gridEl.querySelectorAll("img.product-img").forEach(attachImageFallback);
 }
 
-// --- Popup ---
-function openPopup(cloth) {
-  const popup = document.createElement('div');
-  popup.className = 'edit-popup';
-  popup.innerHTML = `
-    <div class="edit-popup__content">
-      <h3>Rediger plagg</h3>
-      <img src="${cloth.image_url}" class="edit-popup__img" alt="${cloth.name}">
-      <label>Navn</label>
-      <input id="editName" value="${escapeHtml(cloth.name)}" class="modal__input">
-      <label>Kategori</label>
-      <select id="editCat" class="modal__input">
-        <option value="topp"${cloth.category==='topp'?' selected':''}>Topp</option>
-        <option value="underdel"${cloth.category==='underdel'?' selected':''}>Underdel</option>
-        <option value="sko"${cloth.category==='sko'?' selected':''}>Sko</option>
-        <option value="tilbehør"${cloth.category==='tilbehør'?' selected':''}>Tilbehør</option>
-      </select>
-      <div class="edit-popup__actions">
-        <button id="saveBtn" class="button button--primary">Lagre</button>
-        <button id="deleteBtn" class="button button--danger">Slett</button>
-        <button id="closeBtn" class="button" style="background:#e2e8f0;">Lukk</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(popup);
-  setTimeout(() => popup.classList.add('show'), 10);
-
-  popup.querySelector('#closeBtn').addEventListener('click', () => closePopup(popup));
-
-  popup.querySelector('#saveBtn').addEventListener('click', async () => {
-    const name = popup.querySelector('#editName').value.trim();
-    const category = popup.querySelector('#editCat').value;
-    const fd = new FormData();
-    fd.append('name', name);
-    fd.append('category', category);
-
-    try {
-      const res = await fetch(`${API}/clothes/${cloth.id}`, {
-        method: 'PUT',
-        body: fd,
-      });
-      if (!res.ok) throw new Error();
-      closePopup(popup);
-      loadAndRender(currentCategory);
-    } catch {
-      alert('Kunne ikke lagre endringer.');
-    }
-  });
-
-  popup.querySelector('#deleteBtn').addEventListener('click', async () => {
-    if (!confirm('Er du sikker på at du vil slette dette plagget?')) return;
-    try {
-      const res = await fetch(`${API}/clothes/${cloth.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      closePopup(popup);
-      loadAndRender(currentCategory);
-    } catch {
-      alert('Kunne ikke slette plagg.');
-    }
-  });
-}
-
-function closePopup(popup) {
-  popup.classList.remove('show');
-  setTimeout(() => popup.remove(), 150);
-}
-
-// --- Filters ---
-function setActiveButton(category) {
-  filtersEl.querySelectorAll('.chip').forEach(b => {
-    const c = b.getAttribute('data-category') || '';
-    b.classList.toggle('is-active', c === category);
-  });
-}
-
-async function loadAndRender(category = '') {
+async function loadClothes(category = "") {
   try {
     const items = await fetchClothes(category);
     renderClothes(items);
-    setActiveButton(category);
-  } catch {
-    gridEl.innerHTML = `<p class="muted">Kunne ikke hente plagg.</p>`;
+  } catch (err) {
+    console.error("[clothes] error:", err);
+    gridEl.innerHTML = `
+      <div class="card" style="padding:1rem;">
+        <p class="muted">Klarte ikke å hente klær akkurat nå.</p>
+      </div>`;
   }
 }
 
-filtersEl.addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  currentCategory = btn.getAttribute('data-category') || '';
-  loadAndRender(currentCategory);
-});
-
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+// Filters
+if (filtersEl) {
+  filtersEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const category = btn.getAttribute("data-category") || "";
+    filtersEl.querySelectorAll(".chip").forEach(b => b.classList.toggle("is-active", b === btn));
+    loadClothes(category);
+  });
 }
 
-// --- Initial ---
-loadAndRender();
+// --------------------------------------------------
+// Edit popup on card click: rename, change category, delete
+// --------------------------------------------------
+function openEditPopup({ id, name, category, imgSrc }) {
+  // remove existing popup if any
+  document.querySelectorAll(".edit-popup").forEach(el => el.remove());
+
+  const wrap = document.createElement("div");
+  wrap.className = "edit-popup";
+  wrap.innerHTML = `
+    <div class="edit-popup__content" role="dialog" aria-modal="true">
+      <img class="edit-popup__img" src="${imgSrc}" alt="${escapeHtml(name)}"/>
+      <label>Navn
+        <input id="ep-name" class="modal__input" type="text" value="${escapeHtml(name)}" />
+      </label>
+      <label>Kategori
+        <select id="ep-cat" class="modal__input">
+          <option value="topp">topp</option>
+          <option value="underdel">underdel</option>
+          <option value="sko">sko</option>
+          <option value="tilbehør">tilbehør</option>
+        </select>
+      </label>
+      <div class="edit-popup__actions">
+        <button id="ep-delete" class="button button--danger">Slett</button>
+        <div>
+          <button id="ep-cancel" class="button">Avbryt</button>
+          <button id="ep-save" class="button button--primary">Lagre</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.classList.add("show");
+
+  // set current category
+  const catSel = wrap.querySelector("#ep-cat");
+  catSel.value = category || "topp";
+
+  const close = () => wrap.remove();
+
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
+  wrap.querySelector("#ep-cancel").addEventListener("click", close);
+
+  // Save -> PUT /api/clothes/{id} as FormData(name, category)
+  wrap.querySelector("#ep-save").addEventListener("click", async () => {
+    const newName = wrap.querySelector("#ep-name").value.trim();
+    const newCat  = catSel.value;
+    const fd = new FormData();
+    fd.append("name", newName);
+    fd.append("category", newCat);
+    try {
+      const res = await fetch(`${API}/clothes/${id}`, { method: "PUT", body: fd });
+      if (!res.ok) throw new Error(await res.text());
+      close();
+      // reload current filter set
+      const activeBtn = filtersEl?.querySelector(".chip.is-active");
+      const cat = activeBtn ? activeBtn.getAttribute("data-category") || "" : "";
+      loadClothes(cat);
+    } catch (err) {
+      console.error("Update failed:", err);
+      alert("Kunne ikke lagre endringer.");
+    }
+  });
+
+  // Delete (with confirm) -> DELETE /api/clothes/{id}
+  wrap.querySelector("#ep-delete").addEventListener("click", async () => {
+    if (!confirm("Er du sikker på at du vil slette dette plagget?")) return;
+    try {
+      const res = await fetch(`${API}/clothes/${id}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 204) throw new Error(await res.text());
+      close();
+      const activeBtn = filtersEl?.querySelector(".chip.is-active");
+      const cat = activeBtn ? activeBtn.getAttribute("data-category") || "" : "";
+      loadClothes(cat);
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert("Kunne ikke slette plagget.");
+    }
+  });
+}
+
+// Delegate clicks from grid to open popup
+gridEl.addEventListener("click", (e) => {
+  const card = e.target.closest(".product-card");
+  if (!card || !gridEl.contains(card)) return;
+  const id   = card.getAttribute("data-id");
+  const name = card.getAttribute("data-name") || "";
+  const cat  = card.getAttribute("data-category") || "topp";
+  const img  = card.querySelector("img")?.getAttribute("src") || "";
+  openEditPopup({ id, name, category: cat, imgSrc: img });
+});
+
+// --------------------------------------------------
+// Magasin (overlay) — disposable, never blocks grid on close
+// --------------------------------------------------
+async function fetchLooks() {
+  const res = await fetch(`${API}/looks`);
+  if (!res.ok) throw new Error(`Fetch looks failed: ${res.status}`);
+  return res.json();
+}
+
+function openMagazine() {
+  // Create overlay fresh every time
+  const overlay = document.createElement("div");
+  overlay.className = "mag-overlay";
+  overlay.innerHTML = `
+    <div class="mag-sheet">
+      <div class="mag-head">
+        <strong>Magasin</strong>
+        <span class="mag-spacer"></span>
+        <button class="mag-close">Lukk</button>
+      </div>
+      <div class="mag-grid" id="magGrid">
+        <p class="muted">Laster...</p>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const grid = overlay.querySelector("#magGrid");
+  const closeBtn = overlay.querySelector(".mag-close");
+  const close = () => overlay.remove();
+  closeBtn.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+  fetchLooks()
+    .then(list => {
+      if (!Array.isArray(list) || list.length === 0) {
+        grid.innerHTML = `<p class="muted" style="text-align:center;">Ingen looks lagret enda.</p>`;
+        return;
+      }
+      grid.innerHTML = list.map(it => {
+        const title = it.title || `Look #${it.id}`;
+        const date  = it.created_at ? new Date(it.created_at).toLocaleDateString() : "";
+        const src   = normalizeMediaPath(it.image_url || "");
+        return `
+          <article class="mag-card">
+            <img class="mag-img" src="${src}" alt="${escapeHtml(title)}" />
+            <div class="mag-meta">
+              <div class="mag-title">${escapeHtml(title)}</div>
+              <div class="mag-date">${escapeHtml(date)}</div>
+            </div>
+          </article>`;
+      }).join("");
+
+      grid.querySelectorAll("img.mag-img").forEach(attachImageFallback);
+    })
+    .catch(err => {
+      console.error("[looks] error:", err);
+      grid.innerHTML = `<p class="muted" style="text-align:center;">Feil ved lasting av looks.</p>`;
+    });
+}
+
+if (openMagBtn) openMagBtn.addEventListener("click", openMagazine);
+
+// --------------------------------------------------
+// Init
+// --------------------------------------------------
+loadClothes("");
