@@ -6,9 +6,10 @@
 
     <!-- Felles stil først, så side-spesifikk -->
     <link rel="stylesheet" href="/static/show_clothes/style.css" />
-
-    <script src="/static/show_clothes/script.js" defer></script>
     <link rel="icon" type="image/png" href="/static/show_home/favicon.png">
+
+    <!-- Henter logikken som fyller griden og håndterer filter-knappene -->
+    <script src="/static/show_clothes/script.js" defer></script>
   </head>
   <body>
     <!-- Toppbar (samme markup som på de andre sidene) -->
@@ -29,7 +30,32 @@
 
     <main id="content" class="container" style="padding:1.25rem 0;">
       <h1>Dine klær</h1>
-      <div id="grid"></div>
+
+      <!-- FILTER-BAR -->
+      <div class="filters" id="category-filters"
+           style="display:flex; gap:.5rem; flex-wrap:wrap; margin:0 0 1rem;">
+        <button class="chip is-active" data-category="">Alle</button>
+        <button class="chip" data-category="topp">Topper</button>
+        <button class="chip" data-category="underdel">Underdeler</button>
+        <button class="chip" data-category="sko">Sko</button>
+        <button class="chip" data-category="tilbehør">Tilbehør</button>
+      </div>
+
+      <!-- GRID-CONTAINER som fylles av script.js -->
+      <div id="clothes-grid" class="grid"></div>
     </main>
+
+    <!-- Mini-script for mobilmeny (samme som de andre sidene) -->
+    <script>
+      (function () {
+        const toggle = document.querySelector('[data-js="menu-toggle"]');
+        const nav = document.querySelector('[data-js="nav"]');
+        if (!toggle || !nav) return;
+        toggle.addEventListener('click', () => {
+          const open = nav.classList.toggle('nav--open');
+          toggle.setAttribute('aria-expanded', String(open));
+        });
+      })();
+    </script>
   </body>
 </html>

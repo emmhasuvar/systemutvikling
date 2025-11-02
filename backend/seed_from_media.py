@@ -1,36 +1,61 @@
 # backend/seed_from_media.py
 import os
-from pathlib import Path
+from datetime import datetime
+from sqlalchemy.orm import Session
 
 from .database import SessionLocal
-from .models import Cloth
+from .models import Cloth, ClothCategory
 
-BASE_DIR = Path(__file__).resolve().parent
-MEDIA_DIR = (BASE_DIR / "media").resolve()
+MEDIA_DIR = os.path.join(os.path.dirname(__file__), "media")
+os.makedirs(MEDIA_DIR, exist_ok=True)
+
+
+def guess_category(name: str) -> str:
+    s = (name or "").lower()
+    if any(w in s for w in ["sko", "sneaker", "boots", "sandaler", "hæler", "heler", "slippers"]):
+        return ClothCategory.sko.value
+    if any(w in s for w in ["bukse", "jeans", "skjørt", "skjort", "shorts", "underdel", "tights"]):
+        return ClothCategory.underdel.value
+    if any(w in s for w in ["belte", "caps", "hatt", "lue", "smykke", "veske", "tilbehør", "tilbehor", "hals", "skjerf"]):
+        return ClothCategory.tilbehør.value
+    return ClothCategory.topp.value
+
+
+def is_image(filename: str) -> bool:
+    return filename.lower().endswith((".png", ".jpg", ".jpeg"))
+
 
 def main():
-    db = SessionLocal()
-    try:
-        exts = {".png", ".jpg", ".jpeg", ".webp"}
-        files = [p for p in MEDIA_DIR.iterdir() if p.suffix.lower() in exts and p.is_file()]
-        added = 0
+    files = [f for f in os.listdir(MEDIA_DIR) if is_image(f)]
+    if not files:
+        print("Ingen bildefiler i backend/media – ingenting å seede.")
+        return
 
-        for p in files:
-            image_url = f"/media/{p.name}"
-
-            exists = db.query(Cloth).filter(Cloth.image_url == image_url).first()
-            if exists:
+    created = 0
+    with SessionLocal() as db:  # auto commit/close-kontroll
+        for fn in sorted(files):
+            image_url = f"/media/{fn}"
+            # hopp over hvis finnes fra før
+            if db.query(Cloth).filter(Cloth.image_url == image_url).first():
                 continue
 
-            name = p.stem.replace("_", " ").replace("-", " ")
-            cloth = Cloth(name=name, image_url=image_url)
+            name = os.path.splitext(fn)[0]
+            category = guess_category(name)
+
+            cloth = Cloth(
+                name=name,
+                image_url=image_url,
+                category=category,   # viktig pga. NOT NULL
+                user_id=None,
+                created_at=datetime.utcnow(),
+            )
             db.add(cloth)
-            added += 1
+            created += 1
 
         db.commit()
-        print(f"Ferdig. La til {added} nye rader.")
-    finally:
-        db.close()
+
+    print(f"Seed ferdig. La til {created} nye plagg.")
+
 
 if __name__ == "__main__":
     main()
