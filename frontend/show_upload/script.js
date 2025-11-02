@@ -1,4 +1,7 @@
-const API = 'http://127.0.0.1:8000'; // change to location.origin if server and static share host/port
+// Auto-detect correct API base
+const ORIGIN = location.origin;       // e.g. http://127.0.0.1:8000
+const API    = `${ORIGIN}/api`;       // backend routes (e.g. /api/clothes/)
+const UTIL   = ORIGIN;                // utility routes like /remove-bg
 
 /* ==============================
    Mobile nav toggle
@@ -7,6 +10,7 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
   const toggle = document.querySelector('[data-js="menu-toggle"]');
   const nav = document.querySelector('[data-js="nav"]');
   if (!toggle || !nav) return;
+
   toggle.addEventListener('click', () => {
     const open = nav.classList.toggle('nav--open');
     toggle.setAttribute('aria-expanded', String(open));
@@ -21,19 +25,19 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
   window.__upload_bound = true;
 
   // Elements
-  const dropzone   = document.getElementById('dropzone');
-  const fileInput  = document.getElementById('file');
-  const nameInput  = document.getElementById('name');
-  const processBtn = document.getElementById('process-btn');
-  const resetBtn   = document.getElementById('reset-btn');
-  const resultBox  = document.getElementById('result');
-  const previewImg = document.getElementById('preview');
-  const saveBtn    = document.getElementById('save-btn');
-  const statusP    = document.getElementById('status');
-  const categorySelect = document.getElementById('category'); // NYTT
+  const dropzone        = document.getElementById('dropzone');
+  const fileInput       = document.getElementById('file');
+  const nameInput       = document.getElementById('name');
+  const categorySelect  = document.getElementById('category');
+  const processBtn      = document.getElementById('process-btn');
+  const resetBtn        = document.getElementById('reset-btn');
+  const resultBox       = document.getElementById('result');
+  const previewImg      = document.getElementById('preview');
+  const saveBtn         = document.getElementById('save-btn');
+  const statusP         = document.getElementById('status');
 
-  if (!dropzone || !fileInput || !processBtn || !resultBox || !previewImg || !saveBtn || !statusP) {
-    console.warn('[upload] Mangler forventede DOM-elementer — sjekk HTML.');
+  if (!dropzone || !fileInput || !previewImg || !saveBtn || !statusP) {
+    console.warn('[upload] Missing DOM elements — check HTML.');
     return;
   }
 
@@ -44,6 +48,7 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
   function isImage(file) {
     return file && file.type && file.type.startsWith('image/');
   }
+
   function isTooBig(file) {
     return file && file.size > MAX_FILE_MB * 1024 * 1024;
   }
@@ -72,24 +77,24 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     processedBlob = null;
   }
 
+  // --- Drag & Drop + Input ---
   dropzone.addEventListener('click', (e) => {
-    if (e.target === fileInput) return;
-    fileInput.click();
+    if (e.target !== fileInput) fileInput.click();
   });
-  fileInput.addEventListener('click', (e) => { e.stopPropagation(); });
+  fileInput.addEventListener('click', (e) => e.stopPropagation());
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (file) showPreview(file);
   });
 
-  ['dragenter', 'dragover'].forEach((evt) => {
+  ['dragenter', 'dragover'].forEach(evt => {
     dropzone.addEventListener(evt, (e) => {
       e.preventDefault(); e.stopPropagation();
       dropzone.classList.add('is-dragover');
     });
   });
-  ['dragleave', 'dragend', 'drop'].forEach((evt) => {
+  ['dragleave', 'dragend', 'drop'].forEach(evt => {
     dropzone.addEventListener(evt, (e) => {
       e.preventDefault(); e.stopPropagation();
       dropzone.classList.remove('is-dragover');
@@ -105,7 +110,7 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     }
   });
 
-  // Process (remove background)
+  // --- Process (remove background) ---
   processBtn.addEventListener('click', async () => {
     const file = fileInput.files?.[0];
     if (!file) { alert('Velg en bildefil først.'); return; }
@@ -118,8 +123,8 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     try {
       const fd = new FormData();
       fd.append('file', file);
+      const res = await fetch(`${UTIL}/remove-bg`, { method: 'POST', body: fd });
 
-      const res = await fetch(`${API}/remove-bg`, { method: 'POST', body: fd });
       if (!res.ok) {
         console.error('[remove-bg] HTTP', res.status, await res.text());
         alert('Feil: klarte ikke å fjerne bakgrunn.');
@@ -127,7 +132,7 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
         return;
       }
 
-      processedBlob = await res.blob(); // PNG
+      processedBlob = await res.blob(); // PNG blob
       const url = URL.createObjectURL(processedBlob);
       previewImg.src = url;
       resultBox.classList.remove('hidden');
@@ -139,39 +144,41 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     }
   });
 
-  // Save (POST /clothes/)
+  // --- Save (POST /api/clothes/) ---
   saveBtn.addEventListener('click', async () => {
     if (!processedBlob) { alert('Kjør bakgrunnsfjerner først.'); return; }
 
     const name = (nameInput.value || '').trim();
     if (!name) { alert('Skriv inn navn på plagget.'); return; }
 
-    // NYTT: enkel validering av kategori
-    const category = categorySelect ? categorySelect.value : '';
-    if (!category) {
-      alert('Velg kategori.');
-      return;
-    }
+    const rawCat = (categorySelect ? categorySelect.value : '').trim();
+    const validCats = new Set(['topp', 'underdel', 'sko', 'tilbehør']);
+    const category = validCats.has(rawCat) ? rawCat : '';
+    if (!category) { alert('Velg gyldig kategori.'); return; }
 
     try {
       statusP.textContent = 'Lagrer i database…';
 
+      // Convert blob to real File (Fixes 422)
+      const file = new File([processedBlob], 'result.png', { type: 'image/png' });
+
       const fd = new FormData();
       fd.append('name', name);
-      fd.append('category', category);             // NYTT: sendes til backend
-      fd.append('file', processedBlob, 'result.png');
+      fd.append('category', category);
+      fd.append('file', file);
 
       const res = await fetch(`${API}/clothes/`, { method: 'POST', body: fd });
       if (!res.ok) {
-        console.error('[clothes/] HTTP', res.status, await res.text());
-        alert('Kunne ikke lagre i databasen.');
+        const text = await res.text().catch(() => '');
+        console.error('[clothes/] HTTP', res.status, text);
+        alert(`Kunne ikke lagre i databasen (HTTP ${res.status}).\n${text || ''}`);
         statusP.textContent = '';
         return;
       }
 
       const data = await res.json();
-      statusP.textContent = `Lagret! ID: ${data.id}. Går til «Se klær»…`;
-      window.location.href = '/clothes';
+      statusP.textContent = `✅ Lagret! ID: ${data.id}. Går til «Se klær»…`;
+      setTimeout(() => { window.location.href = '/clothes'; }, 1200);
     } catch (err) {
       console.error('[clothes/] Uventet feil', err);
       alert('Uventet feil under lagring.');
@@ -179,12 +186,12 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     }
   });
 
-  // Reset
+  // --- Reset ---
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       fileInput.value = '';
       nameInput.value = '';
-      if (categorySelect) categorySelect.selectedIndex = 0; // NYTT: reset kategori (valgfritt)
+      if (categorySelect) categorySelect.selectedIndex = 0;
       clearPreview();
     });
   }
