@@ -4,17 +4,17 @@
     <meta charset="utf-8" />
     <title>Looksy – Lag Looks</title>
 
-    <!-- Felles stil først (samme som de andre sidene) -->
+    <!-- Felles stil -->
     <link rel="stylesheet" href="/static/show_clothes/style.css" />
     <link rel="icon" type="image/png" href="/static/show_home/favicon.png">
 
-    <!-- Side-spesifikk stil for Lag Looks -->
+    <!-- Side-spesifikk -->
     <link rel="stylesheet" href="/static/show_lag_looks/style.css" />
     <script src="/static/show_lag_looks/script.js" defer></script>
   </head>
 
   <body>
-    <!-- Toppbar (samme markup som på de andre sidene) -->
+    <!-- TOPPBAR -->
     <header class="topbar" role="banner">
       <div class="container topbar__inner">
         <a class="brand" href="/" aria-label="Looksy – Hjem">
@@ -30,21 +30,34 @@
       </div>
     </header>
 
-    <!-- Side-innhold (scopes med .looks for å unngå CSS-konflikt) -->
+    <!-- INNHOLD -->
     <div class="container looks">
       <h1 class="looks__title">Lag Looks</h1>
-      <p class="looks__lead">Dra plagg inn på canvaset, arranger, og lagre som JPG.</p>
+      <p class="looks__lead">Dra plagg inn på canvaset, arranger og lagre som JPG.</p>
 
-      <!-- Verktøylinje -->
+      <!-- FILTER-BAR -->
+      <div class="filters" id="category-filters"
+           style="display:flex; gap:.5rem; flex-wrap:wrap; margin:0 0 1rem;">
+        <button class="chip is-active" data-category="">Alle</button>
+        <button class="chip" data-category="topp">Topper</button>
+        <button class="chip" data-category="underdel">Underdeler</button>
+        <button class="chip" data-category="sko">Sko</button>
+        <button class="chip" data-category="tilbehør">Tilbehør</button>
+      </div>
+
+      <!-- VERKTØYLINJE -->
       <div class="looks__toolbar">
-        <label class="looks__label" for="title">Tittel</label>
+        <label for="title" class="looks__label">Tittel:</label>
         <input id="title" type="text" class="looks__input" placeholder="Casual fredag" />
         <button id="btnClear" class="looks__btn">Tøm canvas</button>
         <button id="btnSave" class="looks__btn looks__btn--primary">Lagre som JPG</button>
-        <span class="looks__hint">Tips: Hold <kbd class="looks__kbd">Shift</kbd> for å skalere, <kbd class="looks__kbd">⌫</kbd> for å slette valgt.</span>
+        <span class="looks__hint">
+          Tips: Hold <kbd class="looks__kbd">Shift</kbd> for å skalere,
+          <kbd class="looks__kbd">⌫</kbd> for å slette valgt.
+        </span>
       </div>
 
-      <!-- Hovedlayout: Sidepanel + Canvas -->
+      <!-- LAYOUT -->
       <main class="looks__layout">
         <aside id="sidebar" class="looks__sidebar" aria-label="Dine plagg">
           <div class="looks__sidebarHeader">Dine plagg</div>
@@ -57,5 +70,18 @@
         </section>
       </main>
     </div>
+
+    <!-- Mini-script for mobilmeny -->
+    <script>
+      (function () {
+        const toggle = document.querySelector('[data-js="menu-toggle"]');
+        const nav = document.querySelector('[data-js="nav"]');
+        if (!toggle || !nav) return;
+        toggle.addEventListener('click', () => {
+          const open = nav.classList.toggle('nav--open');
+          toggle.setAttribute('aria-expanded', String(open));
+        });
+      })();
+    </script>
   </body>
 </html>
