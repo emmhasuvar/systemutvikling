@@ -126,6 +126,19 @@ async def create_look(
     db.commit()
     db.refresh(look)
     return look
+@router.put("/{look_id}", response_model=LookOut)
+def update_look(
+    look_id: int,
+    title: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    look = db.query(Look).get(look_id)
+    if not look:
+        raise HTTPException(status_code=404, detail="Not found")
+    look.title = title
+    db.commit()
+    db.refresh(look)
+    return look
 
 
 @router.delete("/{look_id}", status_code=204)

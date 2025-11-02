@@ -84,3 +84,4 @@ def delete_cloth(cloth_id: int, s: ClothesService = Depends(svc)):
     if not ok:
         raise HTTPException(status_code=404, detail="Not found")
     return Response(status_code=204)
+
