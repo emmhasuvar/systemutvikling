@@ -2,17 +2,14 @@
 <html lang="no">
   <head>
     <meta charset="utf-8" />
-    <title>Looksy – Klær</title>
+    <title>Looksy – Se klær</title>
 
-    <!-- Felles stil først, så side-spesifikk -->
     <link rel="stylesheet" href="/static/show_clothes/style.css" />
     <link rel="icon" type="image/png" href="/static/show_home/favicon.png">
-
-    <!-- Henter logikken som fyller griden og håndterer filter-knappene -->
     <script src="/static/show_clothes/script.js" defer></script>
   </head>
   <body>
-    <!-- Toppbar (samme markup som på de andre sidene) -->
+    <!-- Topbar -->
     <header class="topbar" role="banner">
       <div class="container topbar__inner">
         <a class="brand" href="/" aria-label="Looksy – Hjem">
@@ -29,9 +26,10 @@
     </header>
 
     <main id="content" class="container" style="padding:1.25rem 0;">
-      <h1>Dine klær</h1>
+      <h1 class="page-title">Dine klær</h1>
+      <p class="page-sub muted">Utforsk, rediger eller slett plaggene dine.</p>
 
-      <!-- FILTER-BAR -->
+      <!-- FILTER BAR -->
       <div class="filters" id="category-filters"
            style="display:flex; gap:.5rem; flex-wrap:wrap; margin:0 0 1rem;">
         <button class="chip is-active" data-category="">Alle</button>
@@ -41,11 +39,34 @@
         <button class="chip" data-category="tilbehør">Tilbehør</button>
       </div>
 
-      <!-- GRID-CONTAINER som fylles av script.js -->
-      <div id="clothes-grid" class="grid"></div>
+      <!-- GRID -->
+      <section id="clothes-grid" class="product-grid"></section>
     </main>
 
-    <!-- Mini-script for mobilmeny (samme som de andre sidene) -->
+    <!-- MODAL -->
+    <div id="clothModal" class="modal hidden">
+      <div class="modal__overlay" data-close="true"></div>
+      <div class="modal__content">
+        <button class="modal__close" data-close="true">×</button>
+        <img id="modal-img" src="" alt="" class="modal__image" />
+        <div class="modal__info">
+          <label>Navn</label>
+          <input id="modal-name" type="text" class="modal__input" />
+          <label>Kategori</label>
+          <select id="modal-category" class="modal__input">
+            <option value="topp">Topp</option>
+            <option value="underdel">Underdel</option>
+            <option value="sko">Sko</option>
+            <option value="tilbehør">Tilbehør</option>
+          </select>
+          <div class="modal__actions">
+            <button id="saveEdit" class="button button--primary">Lagre</button>
+            <button id="deleteCloth" class="button button--danger">Slett</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       (function () {
         const toggle = document.querySelector('[data-js="menu-toggle"]');
