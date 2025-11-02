@@ -17,7 +17,6 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
    Upload / Preview / Save
 ============================== */
 (() => {
-  // avoid double-binding if script hot-reloads or is included twice
   if (window.__upload_bound) return;
   window.__upload_bound = true;
 
@@ -31,6 +30,7 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
   const previewImg = document.getElementById('preview');
   const saveBtn    = document.getElementById('save-btn');
   const statusP    = document.getElementById('status');
+  const categorySelect = document.getElementById('category'); // NYTT
 
   if (!dropzone || !fileInput || !processBtn || !resultBox || !previewImg || !saveBtn || !statusP) {
     console.warn('[upload] Mangler forventede DOM-elementer — sjekk HTML.');
@@ -38,14 +38,12 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
   }
 
   // State
-  let processedBlob = null; // sist prosesserte PNG
+  let processedBlob = null;
   const MAX_FILE_MB = 10;
 
-  // Helpers
   function isImage(file) {
     return file && file.type && file.type.startsWith('image/');
   }
-
   function isTooBig(file) {
     return file && file.size > MAX_FILE_MB * 1024 * 1024;
   }
@@ -64,7 +62,7 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     previewImg.src = url;
     resultBox.classList.remove('hidden');
     statusP.textContent = 'Forhåndsvisning klar. Du kan nå kjøre bakgrunnsfjerner.';
-    processedBlob = null; // ny kildefil => nullstill tidligere prosessering
+    processedBlob = null;
   }
 
   function clearPreview() {
@@ -74,45 +72,32 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     processedBlob = null;
   }
 
-  /* ---------------- */
   dropzone.addEventListener('click', (e) => {
-    if (e.target === fileInput) return; // brukeren klikket input => la native dialog åpne
+    if (e.target === fileInput) return;
     fileInput.click();
   });
+  fileInput.addEventListener('click', (e) => { e.stopPropagation(); });
 
-  fileInput.addEventListener('click', (e) => {
-    e.stopPropagation(); // ikke boble opp til dropzone
-  });
-
-  // Native file picker -> preview
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (file) showPreview(file);
   });
 
-  /* ------------------------------
-     Drag & drop
-  ------------------------------ */
   ['dragenter', 'dragover'].forEach((evt) => {
     dropzone.addEventListener(evt, (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       dropzone.classList.add('is-dragover');
     });
   });
-
   ['dragleave', 'dragend', 'drop'].forEach((evt) => {
     dropzone.addEventListener(evt, (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       dropzone.classList.remove('is-dragover');
     });
   });
-
   dropzone.addEventListener('drop', (e) => {
     const file = e.dataTransfer?.files?.[0];
     if (file) {
-      // hold input i sync så resten av koden kan bruke fileInput.files
       const dt = new DataTransfer();
       dt.items.add(file);
       fileInput.files = dt.files;
@@ -120,23 +105,12 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     }
   });
 
-  /* ------------------------------
-     Process (remove background)
-  ------------------------------ */
+  // Process (remove background)
   processBtn.addEventListener('click', async () => {
     const file = fileInput.files?.[0];
-    if (!file) {
-      alert('Velg en bildefil først.');
-      return;
-    }
-    if (!isImage(file)) {
-      alert('Filen må være et bilde (JPG/PNG).');
-      return;
-    }
-    if (isTooBig(file)) {
-      alert(`Filen er for stor (maks ${MAX_FILE_MB} MB).`);
-      return;
-    }
+    if (!file) { alert('Velg en bildefil først.'); return; }
+    if (!isImage(file)) { alert('Filen må være et bilde (JPG/PNG).'); return; }
+    if (isTooBig(file)) { alert(`Filen er for stor (maks ${MAX_FILE_MB} MB).`); return; }
 
     statusP.textContent = 'Kjører bakgrunnsfjerner…';
     processedBlob = null;
@@ -153,7 +127,7 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
         return;
       }
 
-      processedBlob = await res.blob(); // forventer PNG
+      processedBlob = await res.blob(); // PNG
       const url = URL.createObjectURL(processedBlob);
       previewImg.src = url;
       resultBox.classList.remove('hidden');
@@ -165,24 +139,26 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     }
   });
 
-  /* ------------------------------
-     Save (POST til /clothes/)
-  ------------------------------ */
+  // Save (POST /clothes/)
   saveBtn.addEventListener('click', async () => {
-    if (!processedBlob) {
-      alert('Kjør bakgrunnsfjerner først.');
-      return;
-    }
+    if (!processedBlob) { alert('Kjør bakgrunnsfjerner først.'); return; }
+
     const name = (nameInput.value || '').trim();
-    if (!name) {
-      alert('Skriv inn navn på plagget.');
+    if (!name) { alert('Skriv inn navn på plagget.'); return; }
+
+    // NYTT: enkel validering av kategori
+    const category = categorySelect ? categorySelect.value : '';
+    if (!category) {
+      alert('Velg kategori.');
       return;
     }
 
     try {
       statusP.textContent = 'Lagrer i database…';
+
       const fd = new FormData();
       fd.append('name', name);
+      fd.append('category', category);             // NYTT: sendes til backend
       fd.append('file', processedBlob, 'result.png');
 
       const res = await fetch(`${API}/clothes/`, { method: 'POST', body: fd });
@@ -203,13 +179,12 @@ const API = 'http://127.0.0.1:8000'; // change to location.origin if server and 
     }
   });
 
-  /* ------------------------------
-     Reset
-  ------------------------------ */
+  // Reset
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       fileInput.value = '';
       nameInput.value = '';
+      if (categorySelect) categorySelect.selectedIndex = 0; // NYTT: reset kategori (valgfritt)
       clearPreview();
     });
   }

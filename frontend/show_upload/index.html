@@ -47,6 +47,16 @@
             <input id="name" type="text" name="name" placeholder="F.eks. Blå T-skjorte" required />
           </div>
 
+          <div class="field">
+            <label for="category">Kategori</label>
+            <select id="category" name="category" required>
+              <option value="topp">Topp</option>
+              <option value="underdel">Underdel</option>
+              <option value="sko">Sko</option>
+              <option value="tilbehør">Tilbehør</option>
+            </select>
+          </div>
+
           <div class="upload" id="dropzone">
             <input id="file" type="file" name="file" accept="image/*" required />
             <div class="upload__inner">

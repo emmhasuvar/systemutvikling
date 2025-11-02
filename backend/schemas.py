@@ -1,10 +1,11 @@
 # backend/schemas.py
-from typing import List, Optional
+from typing import List, Optional, Literal
 from pydantic import BaseModel
 from datetime import datetime
 
 class ClothBase(BaseModel):
     name: str
+    category: Literal["topp", "underdel", "sko", "tilbehør"]
 
 class ClothOut(ClothBase):
     id: int

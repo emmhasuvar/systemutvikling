@@ -2,6 +2,7 @@ Skriv inn disse linjene, en etter en i terminalen:
 
 1.
 python3 -m venv .venv
+python -m venv .venv
 
 2.
 source .venv/bin/activate
@@ -13,6 +14,7 @@ pip install -r backend/requirements.txt
 
 4.
 python3 -m pip install --upgrade pip
+python -m pip install --upgrade pip
 
 5.
 pip install --upgrade rembg onnxruntime
@@ -22,9 +24,11 @@ git add -f backend/media/*.png
 
 7.
 python3 -m backend.seed_from_media
+python -m backend.seed_from_media
 
 8.
 python3 -m uvicorn backend.app:app --reload --reload-exclude .venv
+python -m uvicorn backend.app:app --reload --reload-exclude .venv
 
 9.
 så trykk cntrl+c
