@@ -26,6 +26,7 @@ git add -f backend/media/*.png
 python3 -m backend.seed_from_media
 python -m backend.seed_from_media
 
+
 8.
 python3 -m uvicorn backend.app:app --reload --reload-exclude .venv
 python -m uvicorn backend.app:app --reload --reload-exclude .venv
