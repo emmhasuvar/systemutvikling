@@ -5,12 +5,11 @@ const API        = `${location.origin}/api`;
 const filtersEl  = document.getElementById("category-filters");
 const gridEl     = document.getElementById("clothes-grid");
 const openMagBtn = document.getElementById("openMagazine");
-
-// simple in-memory state for looks in Magasin
 const state = { looks: [] };
 
-// Safety: remove any stale overlays from previous reloads
-document.querySelectorAll(".mag-overlay, .edit-popup, .lookview-overlay").forEach(el => el.remove());
+// cleanup any stale overlays from hot reloads
+document.querySelectorAll(".mag-overlay, .edit-popup, .lookview-overlay, .confirm-popup")
+  .forEach(el => el.remove());
 
 // --------------------------------------------------
 // Helpers
@@ -23,20 +22,17 @@ function escapeHtml(s = "") {
           .replaceAll("'","&#39;");
 }
 
-/** Normalize any server path to a web URL under /media if needed */
 function normalizeMediaPath(u = "") {
   if (!u) return "";
-  if (/^https?:\/\//i.test(u)) return u;                 // absolute
-  const idx = u.indexOf("/media/");                      // contains /media/
+  if (/^https?:\/\//i.test(u)) return u;
+  const idx = u.indexOf("/media/");
   if (idx !== -1) return u.slice(idx);
-  if (u.startsWith("media/")) return "/" + u;            // starts with media/
-  // fallback: basename
+  if (u.startsWith("media/")) return "/" + u;
   const qpos = u.indexOf("?"); const bare = qpos >= 0 ? u.slice(0, qpos) : u;
   const parts = bare.split(/[\\/]/); const fname = parts.pop() || "";
   return fname ? `/media/${fname}` : "";
 }
 
-/** If image fails, retry with basename and absolute origin once */
 function attachImageFallback(img) {
   let triedBasename = false, triedAbsolute = false;
   img.addEventListener("error", () => {
@@ -51,13 +47,43 @@ function attachImageFallback(img) {
   });
 }
 
+/** Custom confirmation modal returning Promise<boolean> */
+function confirmPopup(message) {
+  return new Promise(resolve => {
+    document.querySelectorAll(".confirm-popup").forEach(el => el.remove());
+
+    const wrap = document.createElement("div");
+    wrap.className = "confirm-popup";
+    wrap.innerHTML = `
+      <div class="confirm-popup__content" role="dialog" aria-modal="true">
+        <p>${escapeHtml(message)}</p>
+        <div class="confirm-popup__actions">
+          <button class="button" data-act="cancel">Avbryt</button>
+          <button class="button button--danger" data-act="confirm">Slett</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    requestAnimationFrame(() => wrap.classList.add("show"));
+
+    const close = (val) => {
+      wrap.classList.remove("show");
+      setTimeout(() => wrap.remove(), 180);
+      resolve(val);
+    };
+
+    wrap.addEventListener("click", e => { if (e.target === wrap) close(false); });
+    wrap.querySelector('[data-act="cancel"]').onclick  = () => close(false);
+    wrap.querySelector('[data-act="confirm"]').onclick = () => close(true);
+  });
+}
+
 // --------------------------------------------------
 // Clothes grid
 // --------------------------------------------------
 async function fetchClothes(category = "") {
   const url = category ? `${API}/clothes/?category=${encodeURIComponent(category)}`
                        : `${API}/clothes/`;
-  const res = await fetch(url);
+  const res = await fetch(url, { credentials: "same-origin" });
   if (!res.ok) throw new Error(`Fetch clothes failed: ${res.status}`);
   return res.json();
 }
@@ -93,14 +119,10 @@ async function loadClothes(category = "") {
     renderClothes(items);
   } catch (err) {
     console.error("[clothes] error:", err);
-    gridEl.innerHTML = `
-      <div class="card" style="padding:1rem;">
-        <p class="muted">Klarte ikke å hente klær akkurat nå.</p>
-      </div>`;
+    gridEl.innerHTML = `<div class="card" style="padding:1rem;"><p class="muted">Klarte ikke å hente klær akkurat nå.</p></div>`;
   }
 }
 
-// Filters
 if (filtersEl) {
   filtersEl.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
@@ -112,10 +134,9 @@ if (filtersEl) {
 }
 
 // --------------------------------------------------
-// Edit popup for CLOTHES (rename, recategorize, delete)
+// Edit popup for clothes (rename / category / delete)
 // --------------------------------------------------
 function openEditPopup({ id, name, category, imgSrc }) {
-  // remove existing popup if any
   document.querySelectorAll(".edit-popup").forEach(el => el.remove());
 
   const wrap = document.createElement("div");
@@ -145,17 +166,14 @@ function openEditPopup({ id, name, category, imgSrc }) {
   document.body.appendChild(wrap);
   wrap.classList.add("show");
 
-  // set current category
   const catSel = wrap.querySelector("#ep-cat");
   catSel.value = category || "topp";
-
   const close = () => wrap.remove();
-  const imgEl = wrap.querySelector("img"); attachImageFallback(imgEl);
+  attachImageFallback(wrap.querySelector("img"));
 
   wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
   wrap.querySelector("#ep-cancel").addEventListener("click", close);
 
-  // Save -> PUT /api/clothes/{id} as FormData(name, category)
   wrap.querySelector("#ep-save").addEventListener("click", async () => {
     const newName = wrap.querySelector("#ep-name").value.trim();
     const newCat  = catSel.value;
@@ -163,37 +181,35 @@ function openEditPopup({ id, name, category, imgSrc }) {
     fd.append("name", newName);
     fd.append("category", newCat);
     try {
-      const res = await fetch(`${API}/clothes/${id}`, { method: "PUT", body: fd });
+      const res = await fetch(`${API}/clothes/${id}`, { method: "PUT", body: fd, credentials: "same-origin" });
       if (!res.ok) throw new Error(await res.text());
       close();
-      // reload current filter set
       const activeBtn = filtersEl?.querySelector(".chip.is-active");
       const cat = activeBtn ? activeBtn.getAttribute("data-category") || "" : "";
       loadClothes(cat);
-    } catch (err) {
-      console.error("Update failed:", err);
+    } catch {
       alert("Kunne ikke lagre endringer.");
     }
   });
 
-  // Delete (with confirm) -> DELETE /api/clothes/{id}
   wrap.querySelector("#ep-delete").addEventListener("click", async () => {
-    if (!confirm("Er du sikker på at du vil slette dette plagget?")) return;
+    const confirm1 = await confirmPopup("Er du sikker på at du vil slette dette plagget?");
+    if (!confirm1) return;
+    const confirm2 = await confirmPopup("Dette kan ikke angres. Slette plagget permanent?");
+    if (!confirm2) return;
     try {
-      const res = await fetch(`${API}/clothes/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API}/clothes/${id}`, { method: "DELETE", credentials: "same-origin" });
       if (!res.ok && res.status !== 204) throw new Error(await res.text());
       close();
       const activeBtn = filtersEl?.querySelector(".chip.is-active");
       const cat = activeBtn ? activeBtn.getAttribute("data-category") || "" : "";
       loadClothes(cat);
-    } catch (err) {
-      console.error("Delete failed:", err);
+    } catch {
       alert("Kunne ikke slette plagget.");
     }
   });
 }
 
-// Delegate clicks from grid to open popup
 gridEl.addEventListener("click", (e) => {
   const card = e.target.closest(".product-card");
   if (!card || !gridEl.contains(card)) return;
@@ -205,81 +221,23 @@ gridEl.addEventListener("click", (e) => {
 });
 
 // --------------------------------------------------
-// Looks — fetch, magazine overlay, big viewer, rename/delete
+// Looks: fetch + magazine overlay with editor
 // --------------------------------------------------
 async function fetchLooks() {
-  const res = await fetch(`${API}/looks`);
-  if (!res.ok) throw new Error(`Fetch looks failed: ${res.status}`);
-  return res.json();
-}
-
-async function fetchLookById(id) {
-  const r = await fetch(`${API}/looks/${id}`);
-  if (!r.ok) throw new Error(await r.text());
-  return r.json(); // { id, title, image_url, created_at, clothes: [...] }
-}
-
-function openLookViewer(look) {
-  // remove any existing viewer
-  document.querySelectorAll(".lookview-overlay").forEach(el => el.remove());
-
-  const overlay = document.createElement("div");
-  overlay.className = "lookview-overlay";
-  overlay.innerHTML = `
-    <div class="lookview-sheet" role="dialog" aria-modal="true" aria-label="Se look">
-      <header class="lookview-head">
-        <div class="lookview-title">
-          <strong>${escapeHtml(look.title || `Look #${look.id}`)}</strong>
-          <span class="lookview-date">${look.created_at ? new Date(look.created_at).toLocaleString() : ""}</span>
-        </div>
-        <span class="mag-spacer"></span>
-        <button class="lookview-close">Lukk</button>
-      </header>
-
-      <div class="lookview-grid">
-        <div class="lookview-canvas">
-          <img class="lookview-img" src="${normalizeMediaPath(look.image_url || '')}" alt="">
-        </div>
-
-        <aside class="lookview-sidebar">
-          <h3 class="lookview-subtitle">Plagg i looken</h3>
-          <div class="lookview-list">
-            ${
-              (look.clothes || []).map(c => `
-                <article class="lv-item" data-cloth-id="${c.id}">
-                  <img class="lv-thumb" src="${normalizeMediaPath(c.image_url || '')}" alt="">
-                  <div class="lv-meta">
-                    <div class="lv-name">${escapeHtml(c.name || `Plagg #${c.id}`)}</div>
-                    <div class="lv-cat">${escapeHtml(c.category || '')}</div>
-                  </div>
-                </article>
-              `).join('') || `<p class="muted">Ingen plagg registrert.</p>`
-            }
-          </div>
-        </aside>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  // image fallback for main + thumbs
-  const mainImg = overlay.querySelector(".lookview-img");
-  attachImageFallback(mainImg);
-  overlay.querySelectorAll(".lv-thumb").forEach(attachImageFallback);
-
-  // close handlers
-  const close = () => overlay.remove();
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
-  overlay.querySelector(".lookview-close").addEventListener("click", close);
-}
-
-async function openLookViewerById(lookId) {
+  async function getJson(url) {
+    const res = await fetch(url, { credentials: "same-origin" });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`${res.status} ${res.statusText}${body ? " — " + body : ""}`);
+    }
+    return res.json();
+  }
+  // try without trailing slash, then with
   try {
-    const look = await fetchLookById(lookId);
-    openLookViewer(look);
-  } catch (err) {
-    console.error(err);
-    alert("Kunne ikke åpne looken.");
+    return await getJson(`${API}/looks`);
+  } catch (e1) {
+    console.warn("[looks] retry with trailing slash:", e1);
+    return await getJson(`${API}/looks/`);
   }
 }
 
@@ -309,10 +267,10 @@ function renderLooksGrid(looks) {
     const id = Number(card.getAttribute("data-look-id"));
     const look = state.looks.find(x => x.id === id);
 
-    // CLICK: open BIG VIEWER (large image + sidebar of clothes)
-    card.addEventListener("click", () => openLookViewerById(id));
+    // open editor on card click
+    card.addEventListener("click", () => openLookEditor(look));
 
-    // ✎ button: rename/delete editor
+    // edit button shouldn't bubble
     card.querySelector(".mag-edit").addEventListener("click", (e) => {
       e.stopPropagation();
       openLookEditor(look);
@@ -321,9 +279,7 @@ function renderLooksGrid(looks) {
 }
 
 function openLookEditor(look) {
-  // remove any open editor
   document.querySelectorAll(".edit-popup").forEach(el => el.remove());
-
   const wrap = document.createElement("div");
   wrap.className = "edit-popup show";
   wrap.innerHTML = `
@@ -340,8 +296,7 @@ function openLookEditor(look) {
     </div>
   `;
   document.body.appendChild(wrap);
-
-  const img = wrap.querySelector("img"); attachImageFallback(img);
+  attachImageFallback(wrap.querySelector("img"));
 
   const close = () => wrap.remove();
   wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
@@ -352,10 +307,9 @@ function openLookEditor(look) {
     const fd = new FormData();
     if (title !== null) fd.append('title', title);
     try {
-      const r = await fetch(`${API}/looks/${look.id}`, { method: 'PUT', body: fd });
+      const r = await fetch(`${API}/looks/${look.id}`, { method: 'PUT', body: fd, credentials: "same-origin" });
       if (!r.ok) throw new Error(await r.text());
       const updated = await r.json();
-      // refresh local state + UI
       const idx = state.looks.findIndex(x => x.id === look.id);
       if (idx >= 0) state.looks[idx] = updated;
       renderLooksGrid(state.looks);
@@ -367,9 +321,12 @@ function openLookEditor(look) {
   };
 
   wrap.querySelector('[data-act="delete"]').onclick = async () => {
-    if (!confirm('Er du sikker på at du vil slette denne looken?')) return;
+    const confirm1 = await confirmPopup("Er du sikker på at du vil slette denne looken?");
+    if (!confirm1) return;
+    const confirm2 = await confirmPopup("Dette kan ikke angres. Slette looken permanent?");
+    if (!confirm2) return;
     try {
-      const r = await fetch(`${API}/looks/${look.id}`, { method: 'DELETE' });
+      const r = await fetch(`${API}/looks/${look.id}`, { method: 'DELETE', credentials: "same-origin" });
       if (!r.ok && r.status !== 204) throw new Error(await r.text());
       state.looks = state.looks.filter(x => x.id !== look.id);
       renderLooksGrid(state.looks);
@@ -382,7 +339,6 @@ function openLookEditor(look) {
 }
 
 function openMagazine() {
-  // Create overlay fresh every time
   const overlay = document.createElement("div");
   overlay.className = "mag-overlay";
   overlay.innerHTML = `
@@ -392,22 +348,19 @@ function openMagazine() {
         <span class="mag-spacer"></span>
         <button class="mag-close">Lukk</button>
       </div>
-      <div class="mag-grid" id="magGrid">
-        <p class="muted">Laster...</p>
-      </div>
+      <div class="mag-grid" id="magGrid"><p class="muted">Laster...</p></div>
     </div>`;
   document.body.appendChild(overlay);
 
   const grid = overlay.querySelector("#magGrid");
-  const closeBtn = overlay.querySelector(".mag-close");
   const close = () => overlay.remove();
-  closeBtn.addEventListener("click", close);
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector(".mag-close").addEventListener("click", close);
+  overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
 
   fetchLooks()
     .then(list => {
       state.looks = Array.isArray(list) ? list : [];
-      if (state.looks.length === 0) {
+      if (!state.looks.length) {
         grid.innerHTML = `<p class="muted" style="text-align:center;">Ingen looks lagret enda.</p>`;
         return;
       }
@@ -415,7 +368,9 @@ function openMagazine() {
     })
     .catch(err => {
       console.error("[looks] error:", err);
-      grid.innerHTML = `<p class="muted" style="text-align:center;">Feil ved lasting av looks.</p>`;
+      grid.innerHTML = `<p class="muted" style="text-align:center;">
+        Feil ved lasting av looks.<br><small>${escapeHtml(String(err.message || err))}</small>
+      </p>`;
     });
 }
 

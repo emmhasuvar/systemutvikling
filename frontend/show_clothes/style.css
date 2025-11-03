@@ -304,3 +304,56 @@ h1{ margin:0 0 .5rem; }
 .lv-meta{ display:flex; flex-direction:column; line-height:1.25; }
 .lv-name{ font-weight:700; }
 .lv-cat{ font-size:.85rem; color:var(--muted); }
+/* =========================
+   CONFIRM POPUP
+========================= */
+.confirm-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 4000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+.confirm-popup.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.confirm-popup__content {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.5rem;
+  width: min(90%, 340px);
+  box-shadow: var(--shadow);
+  text-align: center;
+  animation: fadeUp .25s ease;
+}
+
+.confirm-popup__content p {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.confirm-popup__actions {
+  display: flex;
+  justify-content: center;
+  gap: .8rem;
+}
+
+/* Optional: make danger (Slett) more obvious */
+.confirm-popup__actions .button--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.confirm-popup__actions .button--danger:hover {
+  background: var(--danger-600);
+}
